@@ -2,7 +2,6 @@
 
 #include "Util.h"
 #include "CollisionManager.h"
-#include "EnemyAnimationState.h"
 
 Agent::Agent()
 {
@@ -66,18 +65,39 @@ glm::vec2 Agent::GetRightRightLOSEndPoint() const
 	return m_rightRightLOSEndPoint;
 }
 
-int Agent::GetHealth() const
+EnemyType Agent::GetEnemyType() const
+{
+	return m_type;
+}
+
+EnemyAnimationState Agent::GetAnimationState() const
+{
+	return m_animState;
+}
+
+float Agent::GetMaxHealth() const
+{
+	return m_maxHealth;
+}
+
+float Agent::GetHealth() const
 {
 	return m_health;
 }
 
-void Agent::SetHealth(int value)
+bool Agent::GetDeleteMe() const
+{
+	return m_deleteMe;
+}
+
+void Agent::SetHealth(float value)
 {
 	m_health = value;
 }
 
-void Agent::TakeDamage(int value)
+void Agent::TakeDamage(float value)
 {
+	std::cout << "Took " << value << " damage.\n";
 	m_health -= value;
 }
 
@@ -131,6 +151,21 @@ void Agent::SetActionState(const ActionState state)
 	m_state = state;
 }
 
+void Agent::SetAnimationState(EnemyAnimationState state)
+{
+	m_animState = state;
+}
+
+void Agent::SetMaxHealth(float max_health)
+{
+	m_maxHealth = max_health;
+}
+
+void Agent::SetDeleteMe(bool deleteMe)
+{
+	m_deleteMe = deleteMe;
+}
+
 void Agent::SetLeftLOSEndPoint(const glm::vec2 point)
 {
 	m_leftLOSEndPoint = point;
@@ -144,6 +179,11 @@ void Agent::SetMiddleLOSEndPoint(const glm::vec2 point)
 void Agent::SetRightLOSEndPoint(const glm::vec2 point)
 {
 	m_rightLOSEndPoint = point;
+}
+
+void Agent::SetEnemyType(EnemyType type)
+{
+	m_type = type;
 }
 
 void Agent::SetLineColour(const int index, const glm::vec4 colour)
@@ -190,14 +230,12 @@ bool Agent::CheckAgentLOSToTarget(DisplayObject* target_object, const std::vecto
 	SetHasLOS(has_LOS);
 
 	const auto target_direction = target_object->GetTransform()->position - GetTransform()->position;
-	const auto normalized_direction = Util::Normalize(target_direction); // Points to the target (Unit Vector)
+	const auto normalized_direction = Util::Normalize(target_direction);
 	SetMiddleLOSEndPoint(GetTransform()->position + normalized_direction * GetLOSDistance());
 
-	// if ship to target distance is less than or equal to the LOS Distance (Range)
 	const auto agent_to_range = Util::GetClosestEdge(GetTransform()->position, target_object);
 	if (agent_to_range <= GetLOSDistance())
 	{
-		// we are in within LOS Distance 
 		std::vector<DisplayObject*> contact_list;
 		for (const auto obstacle : obstacles)
 		{
@@ -207,7 +245,7 @@ bool Agent::CheckAgentLOSToTarget(DisplayObject* target_object, const std::vecto
 				&& (obstacle->GetType() != GameObjectType::PATH_NODE)
 				&& (obstacle->GetType() != GameObjectType::TARGET))
 			{
-				 contact_list.push_back(obstacle); // target is out of range
+				contact_list.push_back(obstacle); 
 
 			}
 		}
@@ -259,24 +297,11 @@ void Agent::SetLOSColour(const glm::vec4 colour)
 	m_LOSColour = colour;
 }
 
+
+
 void Agent::ChangeDirection()
 {
 	const auto x = cos(m_currentHeading * Util::Deg2Rad);
 	const auto y = sin(m_currentHeading * Util::Deg2Rad);
 	m_currentDirection = glm::vec2(x, y);
-}
-
-void Agent::SetAnimationState(EnemyAnimationState state)
-{
-	m_animState = state;
-}
-
-EnemyAnimationState Agent::GetAnimationState() const
-{
-	return m_animState;
-}
-
-EnemyT Agent::GetEnemyType() const
-{
-	return m_type;
 }

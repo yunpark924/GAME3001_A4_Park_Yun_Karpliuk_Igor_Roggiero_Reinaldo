@@ -310,6 +310,7 @@
     <ClInclude Include="..\src\WaitBehindCoverAction.h" />
     <ClInclude Include="..\src\WindowName.h" />
     <ClInclude Include="EnemyT.h" />
+    <ClInclude Include="Spriteholder.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md" />

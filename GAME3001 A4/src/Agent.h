@@ -5,10 +5,9 @@
 #include <glm/vec4.hpp>
 #include "NavigationObject.h"
 #include "ActionState.h"
-#include "EnemyAnimationState.h"
 #include "Obstacle.h"
-
-enum class EnemyT;
+#include "EnemyTypes.h"
+#include "EnemyAnimationState.h"
 
 class Agent : public NavigationObject
 {
@@ -34,18 +33,20 @@ public:
 	[[nodiscard]] glm::vec2 GetMiddleLOSEndPoint() const;
 	[[nodiscard]] glm::vec2 GetRightLOSEndPoint() const;
 	[[nodiscard]] glm::vec2 GetRightRightLOSEndPoint() const;
+	[[nodiscard]] EnemyType GetEnemyType() const;
 	[[nodiscard]] EnemyAnimationState GetAnimationState() const;
-	[[nodiscard]] EnemyT GetEnemyType() const;
-
+	[[nodiscard]] float GetMaxHealth() const;
 	// New for Lab 7.3
-	[[nodiscard]] int GetHealth() const;
-	void SetHealth(int value);
-	void TakeDamage(int value);
+	[[nodiscard]] float GetHealth() const;
+	[[nodiscard]] bool GetDeleteMe() const;
+	void SetHealth(float value);
+	void TakeDamage(float value);
 
 
 	bool* GetCollisionWhiskers(); // Returns the entire array
 	glm::vec4 GetLineColour(int index) const;
 	float GetWhiskerAngle() const;
+
 
 	ActionState GetActionState() const;
 
@@ -64,11 +65,16 @@ public:
 	void SetRightLOSEndPoint(glm::vec2 point);
 	void SetRightRightLOSEndPoint(glm::vec2 point);
 
+	void SetEnemyType(EnemyType type);
 	void SetLineColour(int index, glm::vec4 colour);
 	void SetWhiskerAngle(float angle);
 
 	void SetActionState(ActionState state);
 	void SetAnimationState(EnemyAnimationState state);
+
+	void SetMaxHealth(float max_health);
+	void SetDeleteMe(bool deleteMe);
+
 	// utility function
 	void UpdateWhiskers(float angle);
 
@@ -85,7 +91,6 @@ public:
 	virtual void Flee() {}
 	virtual void MoveToCover() {}
 	virtual void WaitBehindCover() {}
-
 
 private:
 	void ChangeDirection();
@@ -114,7 +119,7 @@ private:
 	// New for lab 7.3
 	float m_health = 100.0f;
 	float m_maxHealth = 100.0f;
-	EnemyT m_type;
+	EnemyType m_type;
 	EnemyAnimationState m_animState;
 	bool m_deleteMe;
 };
