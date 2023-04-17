@@ -66,7 +66,7 @@ RangedCombatEnemy::~RangedCombatEnemy()
 void RangedCombatEnemy::Draw()
 {
 	std::string current_anim = "";
-	// Draw the enemy based on the animation state.
+	
 	switch (GetAnimationState())
 	{
 	case EnemyAnimationState::ENEMY_IDLE_LEFT:
@@ -115,12 +115,12 @@ void RangedCombatEnemy::Draw()
 
 	if (EventManager::Instance().IsIMGUIActive()) 
 	{
-		// draw the LOS Line
+		
 		Util::DrawLine(GetTransform()->position + GetCurrentDirection() * 0.5f * static_cast<float>(GetWidth()),
 			GetMiddleLOSEndPoint(), GetLOSColour());
 	}
 
-	// If we are in debug mode, draw the collider rect.
+	
 	if (Game::Instance().GetDebugMode())
 	{
 		Util::DrawRect(GetTransform()->position -
@@ -198,7 +198,7 @@ void RangedCombatEnemy::BuildAnimations()
 
 void RangedCombatEnemy::m_buildTree()
 {
-	// Create and add the root node - Health Condition
+	
 	GetTree()->SetEnemyHealthNode(new EnemyHealthCondition(this, true));
 
 	GetTree()->GetTree().push_back(GetTree()->GetEnemyHealthNode());
@@ -209,7 +209,6 @@ void RangedCombatEnemy::m_buildTree()
 
 void RangedCombatEnemy::m_buildLeftTree()
 {
-	// Left Subtree Level 1 -> Flee Action
 	TreeNode* fleeNode = GetTree()->AddNode(GetTree()->GetEnemyHealthNode(), new FleeAction(this), TreeNodeType::LEFT_TREE_NODE);
 	GetTree()->GetTree().push_back(fleeNode);
 }

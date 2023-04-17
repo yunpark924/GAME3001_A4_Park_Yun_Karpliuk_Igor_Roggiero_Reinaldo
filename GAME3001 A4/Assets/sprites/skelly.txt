@@ -6,3 +6,7 @@ run_down1 0 85 60 65
 run_down2 60 85 60 65
 run_up1 0 165 60 65
 run_up2 60 165 60 65
+deathE1 160 0 70 64
+deathE2 160 0 70 64
+deathE3 160 0 70 64
+deathE4 160 0 70 64

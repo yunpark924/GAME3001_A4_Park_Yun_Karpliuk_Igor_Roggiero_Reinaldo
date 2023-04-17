@@ -361,7 +361,7 @@ void PlayScene::Start()
 	m_setPathNodeLOSDistance(m_pathNodeLOSDistance);
 
 	m_pPlayer = new Player();
-	m_pPlayer->GetTransform()->position = glm::vec2(550.0f, 300.0f);
+	m_pPlayer->GetTransform()->position = glm::vec2(650.0f, 300.0f);
 	AddChild(m_pPlayer, 2);
 
 	// Initializing the enemy pool + spawning in stuff!.

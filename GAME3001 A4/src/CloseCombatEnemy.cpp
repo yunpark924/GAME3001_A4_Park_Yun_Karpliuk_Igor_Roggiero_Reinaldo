@@ -94,12 +94,16 @@ void CloseCombatEnemy::Draw()
 		TextureManager::Instance().PlayAnimation("skelly", GetSprite()->GetAnimation(current_anim),
 			GetTransform()->position, 0.12f, static_cast<double>(GetCurrentHeading()), 255, true);
 		break;
+	case EnemyAnimationState::ENEMY_DEAD:
+		current_anim = "death";
+		TextureManager::Instance().PlayAnimation("skelly", GetSprite()->GetAnimation(current_anim),
+			GetTransform()->position, 0.12f, static_cast<double>(GetCurrentHeading()), 255, true);
+		break;
 	}
 
 	SetWidth(GetSprite()->GetAnimation(current_anim).frames[0].w);
 	SetHeight(GetSprite()->GetAnimation(current_anim).frames[0].h);
 
-	// Draw the health based on the amount the enemy has
 	if (GetHealth() > 0)
 	{
 		Util::DrawFilledRect(GetTransform()->position - glm::vec2((GetHealth() / GetMaxHealth() * 100) / 2, 60.0f), GetHealth() / GetMaxHealth() * 100.0f, 10.0f, glm::vec4(3.0f, 5.0f, 0.0f, 1.0f));
@@ -111,12 +115,10 @@ void CloseCombatEnemy::Draw()
 
 	if (EventManager::Instance().IsIMGUIActive()) 
 	{
-		// draw the LOS Line
 		Util::DrawLine(GetTransform()->position + GetCurrentDirection() * 0.5f * static_cast<float>(GetWidth()),
 			GetMiddleLOSEndPoint(), GetLOSColour());
 	}
 
-	// If we are in debug mode, draw the collider rect.
 	if (Game::Instance().GetDebugMode())
 	{
 		Util::DrawRect(GetTransform()->position -
@@ -128,6 +130,10 @@ void CloseCombatEnemy::Draw()
 void CloseCombatEnemy::Update()
 {
 	GetTree()->MakeDecision();
+	if (GetHealth() <= 0)
+	{
+		SetAnimationState(EnemyAnimationState::ENEMY_DEAD);
+	}
 }
 
 void CloseCombatEnemy::Clean()
@@ -233,4 +239,13 @@ void CloseCombatEnemy::BuildAnimations()
 
 	GetSprite()->SetAnimation(run_animation);
 
+	Animation death_animation = Animation();
+
+	death_animation.name = "death";
+	death_animation.frames.push_back(GetSprite()->GetSpriteSheet()->GetFrame("deathE1"));
+	death_animation.frames.push_back(GetSprite()->GetSpriteSheet()->GetFrame("deathE2"));
+	death_animation.frames.push_back(GetSprite()->GetSpriteSheet()->GetFrame("deathE3"));
+	death_animation.frames.push_back(GetSprite()->GetSpriteSheet()->GetFrame("deathE4"));
+
+	GetSprite()->SetAnimation(death_animation);
 }
