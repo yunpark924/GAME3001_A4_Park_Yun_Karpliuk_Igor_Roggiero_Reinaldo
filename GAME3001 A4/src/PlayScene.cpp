@@ -370,14 +370,13 @@ void PlayScene::Start()
 	m_pEnemyPool->SpawnEnemy(new CloseCombatEnemy(this), EnemyType::CLOSE_COMBAT);
 	m_pEnemyPool->SpawnEnemy(new RangedCombatEnemy(this), EnemyType::RANGED);
 
-	// Set the random enemy position!
 	for (const auto enemy : m_pEnemyPool->GetPool())
 	{
 		enemy->GetTransform()->position = glm::vec2(rand() % 200 + 150, rand() % 300 + 200);
 	}
-	// Adding remaining Enemies label
+
 	m_RemainingEnemiesLabel = new Label();
-	m_RemainingEnemiesLabel->GetTransform()->position = glm::vec2(50.0f, 50.0f);
+	m_RemainingEnemiesLabel->GetTransform()->position = glm::vec2(750, 50.0f);
 	m_RemainingEnemiesLabel->SetColour({ 255,0,0,255 });
 	AddChild(m_RemainingEnemiesLabel);
 
@@ -392,6 +391,7 @@ void PlayScene::Start()
 	SoundManager::Instance().Load("../Assets/Audio/arrow.mp3", "arrow", SoundType::SOUND_SFX);
 	SoundManager::Instance().Load("../Assets/Audio/beam.mp3", "beam", SoundType::SOUND_SFX);
 	SoundManager::Instance().Load("../Assets/Audio/hurt.mp3", "hurt", SoundType::SOUND_SFX);
+	SoundManager::Instance().Load("../Assets/Audio/hurtE.mp3", "hurtE", SoundType::SOUND_SFX);
 	SoundManager::Instance().Load("../Assets/Audio/break.mp3", "break", SoundType::SOUND_SFX);
 	SoundManager::Instance().Load("../Assets/Audio/win.mp3", "win", SoundType::SOUND_SFX);
 	SoundManager::Instance().Load("../Assets/Audio/lose.mp3", "lose", SoundType::SOUND_SFX);
@@ -449,7 +449,7 @@ void PlayScene::GUI_Function()
 	ImGui::NewFrame();
 
 	
-	ImGui::Begin("GAME3001 - W2023 - Assignment 3", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_MenuBar );
+	ImGui::Begin("GAME3001 - W2023 - Assignment 4", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_MenuBar );
 
 	ImGui::Separator();
 
@@ -496,7 +496,6 @@ void PlayScene::GUI_Function()
 
 	ImGui::Separator();
 
-	// Add Obstacle position control for each obstacle
 	for(unsigned i = 0; i < m_pObstacles.size(); ++i)
 	{
 		int obstaclePosition[] = { static_cast<int>(m_pObstacles[i]->GetTransform()->position.x),
@@ -539,6 +538,7 @@ void PlayScene::CheckCollision()
 						enemy->SetIsHit(true);
 						projectile->SetDeleteMe(true);
 						enemy->TakeDamage(projectile->GetDamage());
+						SoundManager::Instance().PlaySoundFX("hurtE");
 					}
 				}
 				else
@@ -562,6 +562,7 @@ void PlayScene::CheckCollision()
 					m_pPlayer->TakeDamage(projectile->GetDamage());
 					SoundManager::Instance().PlaySoundFX("hurt");
 				}
+
 			}
 			break;
 		}

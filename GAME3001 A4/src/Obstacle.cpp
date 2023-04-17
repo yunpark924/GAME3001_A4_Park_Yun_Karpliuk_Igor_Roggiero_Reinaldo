@@ -28,6 +28,7 @@ void Obstacle::Draw()
 
 void Obstacle::Update()
 {
+	
 }
 
 void Obstacle::Clean()

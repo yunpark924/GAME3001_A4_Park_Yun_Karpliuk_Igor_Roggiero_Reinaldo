@@ -2,6 +2,7 @@
 #ifndef __END_SCENE__
 #define __END_SCENE__
 
+#include "Background.h"
 #include "Scene.h"
 #include "Label.h"
 #include "Button.h"
@@ -21,7 +22,7 @@ public:
 
 private:
 	Label* m_label{};
-
+	Background* m_pBackground;
 	Button* m_pRestartButton{};
 	bool m_wincondition;
 };

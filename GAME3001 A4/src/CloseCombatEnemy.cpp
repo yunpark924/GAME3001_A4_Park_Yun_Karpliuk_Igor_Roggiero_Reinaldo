@@ -27,7 +27,7 @@ CloseCombatEnemy::CloseCombatEnemy(Scene* scene)
 	const auto size = TextureManager::Instance().GetTextureSize("skelly");
 	SetWidth(static_cast<int>(size.x));
 	SetHeight(static_cast<int>(size.y));
-	GetTransform()->position = glm::vec2(0.0f, 0.0f);
+	GetTransform()->position = glm::vec2(550.0f, 300.0f);
 	GetRigidBody()->bounds = glm::vec2(GetWidth(), GetHeight());
 	GetRigidBody()->velocity = glm::vec2(0.0f, 0.0f);
 	GetRigidBody()->acceleration = glm::vec2(0.0f, 0.0f);
@@ -42,7 +42,7 @@ CloseCombatEnemy::CloseCombatEnemy(Scene* scene)
 	SetLOSDistance(400.0f);
 	SetWhiskerAngle(45.0f);
 	SetLOSColour(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)); // Default LOS Colour = Red
-
+	SoundManager::Instance().Load("../Assets/Audio/deathE.mp3", "deathE", SoundType::SOUND_SFX);
 	// New for Lab 7.1
 	SetActionState(ActionState::NO_ACTION);
 	buildPatrolPath();
@@ -102,11 +102,11 @@ void CloseCombatEnemy::Draw()
 	// Draw the health based on the amount the enemy has
 	if (GetHealth() > 0)
 	{
-		Util::DrawFilledRect(GetTransform()->position - glm::vec2((GetHealth() / GetMaxHealth() * 100) / 2, 60.0f), GetHealth() / GetMaxHealth() * 100.0f, 10.0f, glm::vec4(0, 1.0f, 0, 1.0f));
+		Util::DrawFilledRect(GetTransform()->position - glm::vec2((GetHealth() / GetMaxHealth() * 100) / 2, 60.0f), GetHealth() / GetMaxHealth() * 100.0f, 10.0f, glm::vec4(3.0f, 5.0f, 0.0f, 1.0f));
 	}
 	else
 	{
-		
+		SoundManager::Instance().PlaySoundFX("deathE");
 	}
 
 	if (EventManager::Instance().IsIMGUIActive()) 
@@ -138,8 +138,9 @@ void CloseCombatEnemy::Clean()
 void CloseCombatEnemy::Attack()
 {
 	auto scene = dynamic_cast<PlayScene*>(GetScene());
-	if (GetActionState() != ActionState::ATTACK) {
-		// Initialize
+	if (GetActionState() != ActionState::ATTACK) 
+	{
+		
 		SetActionState(ActionState::ATTACK);
 	}
 	if (timerUntilHit <= 0)

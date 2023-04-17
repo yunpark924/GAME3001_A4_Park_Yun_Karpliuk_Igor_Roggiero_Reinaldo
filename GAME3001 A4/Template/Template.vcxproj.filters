@@ -228,8 +228,12 @@
     <ClCompile Include="..\src\EnemyPool.cpp">
       <Filter>Game Objects</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\DestructibleObstacle.cpp" />
-    <ClCompile Include="..\src\Enemy.cpp" />
+    <ClCompile Include="..\src\DestructibleObstacle.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\Enemy.cpp">
+      <Filter>Game Objects</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\StartScene.h">
@@ -496,8 +500,12 @@
     <ClInclude Include="..\src\PlaceholderSprite.h">
       <Filter>Game Objects</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\DestructibleObstacle.h" />
-    <ClInclude Include="..\src\Enemy.h" />
+    <ClInclude Include="..\src\Enemy.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\DestructibleObstacle.h">
+      <Filter>Game Objects</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md">

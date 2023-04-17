@@ -52,13 +52,13 @@ void Player::Draw()
 	}
 
 	//// Drawing the health bar for the player based on the health count.
-	//if (m_Health > 0)
-	//{
-	//	Util::DrawFilledRect(GetTransform()->position - glm::vec2((m_Health / m_maxHealth * 100) / 2, 60.0f), m_Health / m_maxHealth * 100, 10.0f, glm::vec4(0, 1.0f, 0, 1.0f));
-	//} else
-	//{
-	//	
-	//}
+	if (m_Health > 0)
+	{
+		Util::DrawFilledRect(glm::vec2((m_Health / m_maxHealth * 100) / 2, 60.0f), m_Health / m_maxHealth * 100, 10.0f, glm::vec4(0, 1.0f, 0, 1.0f));
+	} else
+	{
+		
+	}
 
 	// draw the player according to animation state
 	switch (m_currentAnimationState)

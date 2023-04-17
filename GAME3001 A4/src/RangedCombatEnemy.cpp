@@ -48,7 +48,7 @@ RangedCombatEnemy::RangedCombatEnemy(Scene* scene) :  m_fireCounter(0), m_fireCo
 	SetLOSDistance(1000.0f);
 	SetWhiskerAngle(45.0f);
 	SetLOSColour(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)); // Default LOS Colour = Red
-
+	SoundManager::Instance().Load("../Assets/Audio/deathE.mp3", "deathE", SoundType::SOUND_SFX);
 	// New for Lab 7.1
 	SetActionState(ActionState::NO_ACTION);
 	buildPatrolPath();
@@ -93,12 +93,12 @@ void RangedCombatEnemy::Draw()
 	case EnemyAnimationState::ENEMY_RUN_DOWN:
 		current_anim = "run";
 		TextureManager::Instance().PlayAnimation("mage", GetSprite()->GetAnimation(current_anim),
-			GetTransform()->position, 0.12f, static_cast<double>(GetCurrentHeading()), 255, true);
+			GetTransform()->position, 0.12f, static_cast<double>(GetCurrentHeading()), 255, true, SDL_FLIP_VERTICAL);
 		break;
 	case EnemyAnimationState::ENEMY_RUN_UP:
 		current_anim = "run";
 		TextureManager::Instance().PlayAnimation("mage", GetSprite()->GetAnimation(current_anim),
-			GetTransform()->position, 0.12f, static_cast<double>(GetCurrentHeading()), 255, true);
+			GetTransform()->position, 0.12f, static_cast<double>(GetCurrentHeading()), 255, true, SDL_FLIP_VERTICAL);
 		break;
 	}
 
@@ -110,6 +110,7 @@ void RangedCombatEnemy::Draw()
 		Util::DrawFilledRect(GetTransform()->position - glm::vec2((GetHealth() / GetMaxHealth() * 100) / 2, 60.0f), GetHealth() / GetMaxHealth() * 100.0f, 10.0f, glm::vec4(0, 1.0f, 0, 1.0f));
 	} else
 	{
+		SoundManager::Instance().PlaySoundFX("deathE");
 	}
 
 	if (EventManager::Instance().IsIMGUIActive()) 

@@ -2,10 +2,12 @@
 #ifndef __START_SCENE__
 #define __START_SCENE__
 
+#include "Background.h"
 #include "Scene.h"
 #include "Label.h"
 #include "Button.h"
 #include "Player.h"
+#include "Target.h"
 
 class StartScene final : public Scene
 {
@@ -26,9 +28,8 @@ private:
 	Label* m_pReinaldo{};
 	Label* m_pYun{};
 	Label* m_pIgor{};
-
-	Player* m_pPlayer{};
-
+	Target* m_pTarget{};
+	Background* m_pBackground;
 	Button* m_pStartButton{};
 };
 

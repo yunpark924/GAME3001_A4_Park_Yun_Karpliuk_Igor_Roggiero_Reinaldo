@@ -4,7 +4,7 @@
 
 Target::Target()
 {
-	TextureManager::Instance().Load("../Assets/textures/enterprise_small.png","target");
+	TextureManager::Instance().Load("../Assets/textures/link.png","target");
 
 	const auto size = TextureManager::Instance().GetTextureSize("target");
 	SetWidth(static_cast<int>(size.x));

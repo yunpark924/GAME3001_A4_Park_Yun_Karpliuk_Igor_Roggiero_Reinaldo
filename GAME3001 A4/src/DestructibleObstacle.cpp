@@ -22,10 +22,7 @@ DestructibleObstacle::DestructibleObstacle()
 void DestructibleObstacle::Draw()
 {
     TextureManager::Instance().Draw("destruct_obstacle", GetTransform()->position, this, 0, 255, true);
-    if (GetHealth() > 0)
-    {
-        Util::DrawFilledRect(GetTransform()->position - glm::vec2((GetHealth() / GetMaxHealth() * 100) / 2, 60.0f), GetHealth() / GetMaxHealth() * 100, 10.0f, glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
-    }
+  
 }
 
 void DestructibleObstacle::Update()

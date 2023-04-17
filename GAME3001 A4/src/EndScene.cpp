@@ -14,7 +14,10 @@ EndScene::~EndScene()
 
 void EndScene::Draw()
 {
+	TextureManager::Instance().Draw("background",
+		GetTransform()->position, 0, 255, true);
 	DrawDisplayList();
+	
 }
 
 void EndScene::Update()
@@ -50,8 +53,15 @@ void EndScene::HandleEvents()
 
 void EndScene::Start()
 {
+	
 	if (!m_wincondition)
 	{
+		TextureManager::Instance().Load("../Assets/sprites/badBG.png", "background");
+
+		const auto size = TextureManager::Instance().GetTextureSize("background");
+		SetWidth(size.x);
+		SetHeight(size.y);
+		GetTransform()->position = glm::vec2(size.x / 2, size.y / 2);
 		// Preload music
 		SoundManager::Instance().Load("../Assets/Audio/GameOver.mp3", "GameOver", SoundType::SOUND_MUSIC);
 		SoundManager::Instance().SetMusicVolume(20);
@@ -62,7 +72,12 @@ void EndScene::Start()
 
 	else
 	{
-		TextureManager::Instance().Load("../Assets/sprites/gameover.png", "game over");
+		TextureManager::Instance().Load("../Assets/sprites/goodBG.png", "background");
+
+		const auto size = TextureManager::Instance().GetTextureSize("background");
+		SetWidth(size.x);
+		SetHeight(size.y);
+		GetTransform()->position = glm::vec2(size.x / 2, size.y / 2);
 
 		// Preload music
 		SoundManager::Instance().Load("../Assets/Audio/Victory.mp3", "Victory", SoundType::SOUND_MUSIC);
@@ -72,14 +87,14 @@ void EndScene::Start()
 		SoundManager::Instance().PlayMusic("Victory");
 	}
 
-	const SDL_Color blue = { 0, 0, 255, 255 };
-	m_label = (m_wincondition) ? new  Label("Hyrule is saved!", "Dock51", 80, blue, glm::vec2(400.0f, 40.0f)) : new  Label("Hyrule has Fallen.", "Consolas", 80, blue, glm::vec2(400.0f, 40.0f));
+	const SDL_Color blue = { 100, 0, 255, 255 };
+	m_label = (m_wincondition) ? new  Label("Hyrule is saved!", "Wild", 80, blue, glm::vec2(400.0f, 140.0f)) : new  Label("Hyrule has Fallen.", "Wild", 80, blue, glm::vec2(400.0f, 140.0f));
 	m_label->SetParent(this);
 	AddChild(m_label);
 
 	// Restart Button
 	m_pRestartButton = new Button("../Assets/textures/restartButton.png", "restartButton", GameObjectType::RESTART_BUTTON);
-	m_pRestartButton->GetTransform()->position = glm::vec2(400.0f, 400.0f);
+	m_pRestartButton->GetTransform()->position = glm::vec2(400.0f, 300.0f);
 	m_pRestartButton->AddEventListener(Event::CLICK, [&]()-> void
 	{
 		m_pRestartButton->SetActive(false);
