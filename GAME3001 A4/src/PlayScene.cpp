@@ -8,7 +8,9 @@
 #include "imgui_sdl.h"
 #include "Renderer.h"
 #include "Util.h"
+#include "Enemy.h"
 #include <fstream>
+#include "../Template/EnemyT.h"
 
 PlayScene::PlayScene()
 {
@@ -48,7 +50,7 @@ void PlayScene::Draw()
 			for (const auto enemy : m_pEnemyPool->GetPool())
 			{
 				bool detected;
-				if (enemy->GetEnemyType() == EnemyType::CLOSE_COMBAT)
+				if (enemy->GetEnemyType() == EnemyT::CLOSE_COMBAT)
 				{
 					detected = dynamic_cast<CloseCombatEnemy*>(enemy)->GetTree()->GetPlayerDetectedNode()->GetDetected();
 					Util::DrawCircle(enemy->GetTransform()->position, dynamic_cast<CloseCombatEnemy*>(enemy)->GetMaxRange(), detected ? glm::vec4(0, 1, 0, 1) : glm::vec4(1, 0, 0, 1));
@@ -96,7 +98,7 @@ void PlayScene::Update()
 		{
 			float distance = Util::Distance(enemy->GetTransform()->position, m_pPlayer->GetTransform()->position);
 
-			if (enemy->GetEnemyType() == EnemyType::CLOSE_COMBAT)
+			if (enemy->GetEnemyType() == EnemyT::CLOSE_COMBAT)
 			{
 				const auto tempEnemy = dynamic_cast<CloseCombatEnemy*>(enemy);
 				tempEnemy->GetTree()->GetEnemyHealthNode()->SetHealthy(tempEnemy->GetHealth() > 25);
@@ -146,12 +148,12 @@ void PlayScene::Update()
 				if ((enemy->GetTransform()->position.x > 800.0f || enemy->GetTransform()->position.x < 0)
 					&& (enemy->GetTransform()->position.y > 600.0f || enemy->GetTransform()->position.y < 0))
 				{
-					if (enemy->GetEnemyType() == EnemyType::CLOSE_COMBAT)
+					if (enemy->GetEnemyType() == EnemyT::CLOSE_COMBAT)
 					{
-						m_pEnemyPool->SpawnEnemy(new CloseCombatEnemy(this), EnemyType::CLOSE_COMBAT);
+						m_pEnemyPool->SpawnEnemy(new CloseCombatEnemy(this), EnemyT::CLOSE_COMBAT);
 					}
 					else {
-						m_pEnemyPool->SpawnEnemy(new RangedCombatEnemy(this), EnemyType::RANGED);
+						m_pEnemyPool->SpawnEnemy(new RangedCombatEnemy(this), EnemyT::RANGED);
 					}
 					enemy->SetDeleteMe(true);
 				}
@@ -273,7 +275,7 @@ void PlayScene::HandleEvents()
 				for (const auto enemy : m_pEnemyPool->GetPool())
 				{
 					enemy->TakeDamage(10); // enemy takes fixed dmg.
-					if (enemy->GetEnemyType() == EnemyType::CLOSE_COMBAT)
+					if (enemy->GetEnemyType() == EnemyT::CLOSE_COMBAT)
 					{
 						dynamic_cast<CloseCombatEnemy*>(enemy)->GetTree()->GetEnemyHitNode()->SetHit(true);
 					}
@@ -287,8 +289,8 @@ void PlayScene::HandleEvents()
 
 			if (EventManager::Instance().KeyPressed(SDL_SCANCODE_R))
 			{
-				m_pEnemyPool->SpawnEnemy(new CloseCombatEnemy(this), EnemyType::CLOSE_COMBAT);
-				m_pEnemyPool->SpawnEnemy(new RangedCombatEnemy(this), EnemyType::RANGED);
+				m_pEnemyPool->SpawnEnemy(new CloseCombatEnemy(this), EnemyT::CLOSE_COMBAT);
+				m_pEnemyPool->SpawnEnemy(new RangedCombatEnemy(this), EnemyT::RANGED);
 			}
 
 			if (EventManager::Instance().KeyPressed(SDL_SCANCODE_P))
@@ -297,12 +299,12 @@ void PlayScene::HandleEvents()
 				{
 					enemy->SetHealth(100); // Enemy Sets health
 
-					if (enemy->GetEnemyType() == EnemyType::CLOSE_COMBAT)
+					if (enemy->GetEnemyType() == EnemyT::CLOSE_COMBAT)
 					{
 						dynamic_cast<CloseCombatEnemy*>(enemy)->SetIsHit(true);
 						dynamic_cast<CloseCombatEnemy*>(enemy)->GetTree()->GetPlayerDetectedNode()->SetPlayerDetected(false);
 					}
-					else { // if (enemy->GetType() == EnemyType::RANGED)
+					else {
 						dynamic_cast<CloseCombatEnemy*>(enemy)->SetIsHit(true);
 						dynamic_cast<RangedCombatEnemy*>(enemy)->GetTree()->GetPlayerDetectedNode()->SetPlayerDetected(false);
 					}
@@ -392,6 +394,11 @@ Target* PlayScene::GetTarget() const
 std::vector<PathNode*> PlayScene::GetGrid()
 {
 	return m_pGrid;
+}
+
+std::vector<Obstacle*> PlayScene::GetObstacles() const
+{
+	return m_pObstacles;
 }
 
 void PlayScene::GUI_Function()

@@ -16,8 +16,10 @@ public:
 	void Draw() override;
 	void Update() override;
 	void Clean() override;
+	bool GetDeleteMe() const;
+	void SetDeleteMe(bool deleteMe);
 private:
-	
+	bool m_deleteMe;
 };
 
 #endif /* defined (__OBSTACLE__) */

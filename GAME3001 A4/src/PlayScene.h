@@ -14,6 +14,7 @@
 
 // New for Lab 7.2
 #include "CloseCombatEnemy.h"
+#include "EnemyPool.h"
 #include "Label.h"
 #include "Player.h"
 #include "RangedCombatEnemy.h"
@@ -40,6 +41,7 @@ public:
 	void SpawnEnemyTorpedo();
 	[[nodiscard]] Target* GetTarget() const;
 	[[nodiscard]] std::vector<PathNode*> GetGrid();
+	[[nodiscard]] std::vector<Obstacle*> GetObstacles() const;
 private:
 	// IMGUI Function
 	void GUI_Function();

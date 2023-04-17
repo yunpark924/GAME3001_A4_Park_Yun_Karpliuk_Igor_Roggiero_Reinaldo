@@ -2,6 +2,7 @@
 
 #include "Util.h"
 #include "CollisionManager.h"
+#include "EnemyAnimationState.h"
 
 Agent::Agent()
 {
@@ -213,8 +214,6 @@ bool Agent::CheckAgentLOSToTarget(DisplayObject* target_object, const std::vecto
 
 		has_LOS = CollisionManager::LOSCheck(this, GetMiddleLOSEndPoint(), contact_list, target_object);
 
-		/*const auto LOSColour = (target_object->GetType() == GameObjectType::AGENT) ? glm::vec4(0, 0, 1, 1) : glm::vec4(0, 1, 0, 1);
-		agent->SetHasLOS(has_LOS, LOSColour);*/
 	}
 
 	SetHasLOS(has_LOS);
@@ -265,4 +264,19 @@ void Agent::ChangeDirection()
 	const auto x = cos(m_currentHeading * Util::Deg2Rad);
 	const auto y = sin(m_currentHeading * Util::Deg2Rad);
 	m_currentDirection = glm::vec2(x, y);
+}
+
+void Agent::SetAnimationState(EnemyAnimationState state)
+{
+	m_animState = state;
+}
+
+EnemyAnimationState Agent::GetAnimationState() const
+{
+	return m_animState;
+}
+
+EnemyT Agent::GetEnemyType() const
+{
+	return m_type;
 }

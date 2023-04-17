@@ -8,11 +8,11 @@
 Player::Player() : m_currentAnimationState(PlayerAnimationState::PLAYER_IDLE_RIGHT)
 {
 	TextureManager::Instance().LoadSpriteSheet(
-		"../Assets/sprites/Player/bunny_body.txt",
-		"../Assets/sprites/Player/bunny_body.png",
-		"bunny_body");
+		"../Assets/sprites/Player/placeholder.txt",
+		"../Assets/sprites/Player/placeholder.png",
+		"placeholder");
 
-	SetSpriteSheet(TextureManager::Instance().GetSpriteSheet("bunny_body"));
+	SetSpriteSheet(TextureManager::Instance().GetSpriteSheet("placeholder"));
 
 	SetRangeOfAttack(50.0f);
 
@@ -65,27 +65,27 @@ void Player::Draw()
 	switch (m_currentAnimationState)
 	{
 	case PlayerAnimationState::PLAYER_IDLE_RIGHT:
-		TextureManager::Instance().PlayAnimation("bunny_body", GetAnimation("idle"),
+		TextureManager::Instance().PlayAnimation("placeholder", GetAnimation("idle"),
 			GetTransform()->position, 0.12f, 0, 255, true, SDL_FLIP_HORIZONTAL);
 		break;
 	case PlayerAnimationState::PLAYER_IDLE_LEFT:
-		TextureManager::Instance().PlayAnimation("bunny_body", GetAnimation("idle"),
+		TextureManager::Instance().PlayAnimation("placeholder", GetAnimation("idle"),
 			GetTransform()->position, 0.12f, 0, 255, true);
 		break;
 	case PlayerAnimationState::PLAYER_RUN_RIGHT:
-		TextureManager::Instance().PlayAnimation("bunny_body", GetAnimation("run"),
+		TextureManager::Instance().PlayAnimation("placeholder", GetAnimation("run"),
 			GetTransform()->position, 0.15f, 0, 255, true, SDL_FLIP_HORIZONTAL);
 		break;
 	case PlayerAnimationState::PLAYER_RUN_LEFT:
-		TextureManager::Instance().PlayAnimation("bunny_body", GetAnimation("run"),
+		TextureManager::Instance().PlayAnimation("placeholder", GetAnimation("run"),
 			GetTransform()->position, 0.15f, 0, 255, true);
 		break;
 	case PlayerAnimationState::PLAYER_RUN_DOWN:
-		TextureManager::Instance().PlayAnimation("bunny_body", GetAnimation("run_back"),
+		TextureManager::Instance().PlayAnimation("placeholder", GetAnimation("run_back"),
 			GetTransform()->position, 0.15f, 0, 255, true);
 		break;
 	case PlayerAnimationState::PLAYER_RUN_UP:
-		TextureManager::Instance().PlayAnimation("bunny_body", GetAnimation("run_front"),
+		TextureManager::Instance().PlayAnimation("placeholder", GetAnimation("run_front"),
 			GetTransform()->position, 0.15f, 0, 255, true);
 		break;
 	default:
@@ -123,7 +123,7 @@ void Player::MeleeAttack()
 {
 	// Melee Animation here
 
-	std::cout << "Melee Attack successful on enemy!\n\n";
+	std::cout << "Attack successful on enemy!\n\n";
 }
 
 

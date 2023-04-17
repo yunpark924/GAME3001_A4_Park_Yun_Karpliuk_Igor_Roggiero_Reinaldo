@@ -5,7 +5,10 @@
 #include <glm/vec4.hpp>
 #include "NavigationObject.h"
 #include "ActionState.h"
+#include "EnemyAnimationState.h"
 #include "Obstacle.h"
+
+enum class EnemyT;
 
 class Agent : public NavigationObject
 {
@@ -31,7 +34,8 @@ public:
 	[[nodiscard]] glm::vec2 GetMiddleLOSEndPoint() const;
 	[[nodiscard]] glm::vec2 GetRightLOSEndPoint() const;
 	[[nodiscard]] glm::vec2 GetRightRightLOSEndPoint() const;
-
+	[[nodiscard]] EnemyAnimationState GetAnimationState() const;
+	[[nodiscard]] EnemyT GetEnemyType() const;
 
 	// New for Lab 7.3
 	[[nodiscard]] int GetHealth() const;
@@ -42,7 +46,6 @@ public:
 	bool* GetCollisionWhiskers(); // Returns the entire array
 	glm::vec4 GetLineColour(int index) const;
 	float GetWhiskerAngle() const;
-
 
 	ActionState GetActionState() const;
 
@@ -65,7 +68,7 @@ public:
 	void SetWhiskerAngle(float angle);
 
 	void SetActionState(ActionState state);
-
+	void SetAnimationState(EnemyAnimationState state);
 	// utility function
 	void UpdateWhiskers(float angle);
 
@@ -109,7 +112,11 @@ private:
 	ActionState m_state;
 
 	// New for lab 7.3
-	int m_health = 100;
+	float m_health = 100.0f;
+	float m_maxHealth = 100.0f;
+	EnemyT m_type;
+	EnemyAnimationState m_animState;
+	bool m_deleteMe;
 };
 
 

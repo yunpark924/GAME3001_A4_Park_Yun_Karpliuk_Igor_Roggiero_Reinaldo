@@ -2,9 +2,10 @@
 #ifndef __ENEMYT_H__
 #define __ENEMYT_H__
 
-enum class EnemyType {
+enum class EnemyT
+{
 	CLOSE_COMBAT,
-	RANGED,
+	RANGED
 };
 
 #endif //!__ENEMYT_H__
