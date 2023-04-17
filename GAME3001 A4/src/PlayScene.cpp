@@ -1,15 +1,14 @@
 #include "PlayScene.h"
 #include "Game.h"
 #include "EventManager.h"
-#include "InputType.h"
+#include <windows.h>
 
 // required for IMGUI
-#include <fstream>
-
 #include "imgui.h"
 #include "imgui_sdl.h"
 #include "Renderer.h"
 #include "Util.h"
+#include <fstream>
 
 PlayScene::PlayScene()
 {
@@ -21,26 +20,45 @@ PlayScene::~PlayScene()
 
 void PlayScene::Draw()
 {
-	DrawDisplayList();
-	if(m_bDebugView)
+	if (!m_gameWon)
 	{
-		Util::DrawRect(m_pPlayer->GetTransform()->position -
-			glm::vec2(m_pPlayer->GetWidth() * 0.5f, m_pPlayer->GetHeight() * 0.5f),
-			m_pPlayer->GetWidth(), m_pPlayer->GetHeight());
-		Util::DrawRect(m_pEnemy->GetTransform()->position -
-			glm::vec2(m_pEnemy->GetWidth() * 0.5f, m_pEnemy->GetHeight() * 0.5f),
-			m_pEnemy->GetWidth(), m_pEnemy->GetHeight());
-		Util::DrawCircle(m_pEnemy->GetTransform()->position, m_pEnemy->m_detecRadius * 0.5f);
-		Util::DrawLine(m_pEnemy->GetTransform()->position,
-			m_pEnemy->GetTransform()->position + m_pEnemy->GetCurrentDirection() * m_pEnemy->GetLOSDistance(),
-			glm::vec4(1, 0, 0, 1));
+		constexpr auto tile_size = Config::TILE_SIZE;
+		constexpr auto offset = glm::vec2(Config::TILE_SIZE * 0.5f, Config::TILE_SIZE * 0.5f);
 
-		for(auto obstacle : m_pObstacles)
+		for (int row = 0; row < Config::ROW_NUM * 2; ++row)
 		{
-			Util::DrawRect(obstacle->GetTransform()->position -
-				glm::vec2(obstacle->GetWidth() * 0.5f, obstacle->GetHeight() * 0.5f),
-				obstacle->GetWidth(), obstacle->GetHeight());
+			for (int col = 0; col < Config::COL_NUM * 2; ++col)
+			{
+				TextureManager::Instance().Draw("grass", glm::vec2(tile_size * row, tile_size * col) + offset,
+					0, 255, true, SDL_FLIP_NONE);
+			}
+		}
 
+		DrawDisplayList();
+
+
+
+		if (m_isGridEnabled)
+		{
+			for (const auto obstacle : m_pObstacles)
+			{
+				Util::DrawRect(obstacle->GetTransform()->position - glm::vec2(obstacle->GetWidth() * 0.5f,
+					obstacle->GetHeight() * 0.5f), obstacle->GetWidth(), obstacle->GetHeight());
+			}
+			for (const auto enemy : m_pEnemyPool->GetPool())
+			{
+				bool detected;
+				if (enemy->GetEnemyType() == EnemyType::CLOSE_COMBAT)
+				{
+					detected = dynamic_cast<CloseCombatEnemy*>(enemy)->GetTree()->GetPlayerDetectedNode()->GetDetected();
+					Util::DrawCircle(enemy->GetTransform()->position, dynamic_cast<CloseCombatEnemy*>(enemy)->GetMaxRange(), detected ? glm::vec4(0, 1, 0, 1) : glm::vec4(1, 0, 0, 1));
+				}
+				else { // If ranged combat enemy
+					detected = dynamic_cast<RangedCombatEnemy*>(enemy)->GetTree()->GetPlayerDetectedNode()->GetDetected();
+					Util::DrawCircle(enemy->GetTransform()->position, dynamic_cast<RangedCombatEnemy*>(enemy)->GetMaxRange(), detected ? glm::vec4(0, 1, 0, 1) : glm::vec4(1, 0, 0, 1));
+				}
+
+			}
 		}
 	}
 	SDL_SetRenderDrawColor(Renderer::Instance().GetRenderer(), 255, 255, 255, 255);
@@ -48,62 +66,109 @@ void PlayScene::Draw()
 
 void PlayScene::Update()
 {
-	UpdateDisplayList();
+	if (!m_gameWon && !m_gameLost)
+	{
+		UpdateDisplayList();
 
-	if(m_pPlayerHealth == 0)
-	{
-		m_pPlayer->SetEnabled(false);
-	}
-	if(m_pEnemyHealth == 0)
-	{
-		SoundManager::Instance().PlaySound("enemy death");
-		m_pEnemy->SetAnimationState(EnemyAnimatioState::ENEMY_DIE);
-		m_pEnemy->SetEnabled(false);
-	}
-
-	float distance = Util::Distance(m_pPlayer->GetTransform()->position, m_pEnemy->GetTransform()->position);
-	if (distance < m_pEnemy->m_detecRadius)
-	{
-		std::cout << "Player is in radius!\n";
-		m_isRange = true;
-	}
-	else
-		m_isRange = false;
-
-	// obstacle blocking,,,,,,, sigh
-	for(unsigned i = 0; i < m_pObstacles.size(); i++)
-	{
-		if(CollisionManager::AABBCheck(m_pPlayer, m_pObstacles[i]))
+		if (m_pEnemyPool->GetPool().size() < 1)
 		{
-			m_pPlayer->GetRigidBody()->isColliding = true;
-	
-			if (m_pPlayer->GetTransform()->position.y >= m_pObstacles[i]->GetTransform()->position.y) // If bottom of player < top of platform in "previous frame"
-				// Colliding with top side of tile. Or collided from top.
-				m_pPlayer->GetTransform()->position.y = m_pObstacles[i]->GetTransform()->position.y + 100.0f;
-			else if (m_pPlayer->GetTransform()->position.x >= m_pObstacles[i]->GetTransform()->position.x) // If bottom of player < top of platform in "previous frame"
-				// Colliding with top side of tile. Or collided from top.
-				m_pPlayer->GetTransform()->position.x = m_pObstacles[i]->GetTransform()->position.x + 100.0f;
+			m_gameWon = true;
 		}
-	}
+		if (m_pPlayer->GetHealth() <= 0)
+		{
+			m_gameLost = true;
+		}
 
-	CheckAgentLOS(m_pPlayer, m_pEnemy);
-	m_decTree->MakeDecision();
+		CheckCollision();
 
-	if (m_isGridEnabled)
-	{
+		for (size_t i = 0; i < m_pObstacles.size(); i++)
+		{
+			if (m_pObstacles[i]->GetDeleteMe())
+			{
+				RemoveChild(m_pObstacles[i]);
+				m_pObstacles[i] = nullptr;
+				m_pObstacles.erase(i + m_pObstacles.begin());
+				m_pObstacles.shrink_to_fit();
+			}
+
+		}
+		for (const auto enemy : m_pEnemyPool->GetPool())
+		{
+			float distance = Util::Distance(enemy->GetTransform()->position, m_pPlayer->GetTransform()->position);
+
+			if (enemy->GetEnemyType() == EnemyType::CLOSE_COMBAT)
+			{
+				const auto tempEnemy = dynamic_cast<CloseCombatEnemy*>(enemy);
+				tempEnemy->GetTree()->GetEnemyHealthNode()->SetHealthy(tempEnemy->GetHealth() > 25);
+				tempEnemy->GetTree()->GetEnemyHitNode()->SetHit(tempEnemy->GetIsHit());
+				tempEnemy->CheckAgentLOSToTarget(m_pPlayer, m_pObstacles);
+
+				tempEnemy->GetTree()->GetPlayerDetectedNode()->SetPlayerDetected(distance < tempEnemy->GetMaxRange() || tempEnemy->HasLOS());
+				tempEnemy->GetTree()->GetCloseCombatNode()->SetIsWithinCombatRange(distance <= tempEnemy->GetMaxRange() && distance >= tempEnemy->GetMinRange());
+			}
+			else { // If ranged combat enemy
+				const auto tempEnemy = dynamic_cast<RangedCombatEnemy*>(enemy);
+				tempEnemy->GetTree()->GetEnemyHealthNode()->SetHealthy(tempEnemy->GetHealth() > 25);
+				tempEnemy->GetTree()->GetEnemyHitNode()->SetHit(tempEnemy->GetIsHit());
+				tempEnemy->CheckAgentLOSToTarget(m_pPlayer, m_pObstacles);
+
+				tempEnemy->GetTree()->GetPlayerDetectedNode()->SetPlayerDetected(distance < tempEnemy->GetMaxRange() || tempEnemy->HasLOS());
+				tempEnemy->GetTree()->GetRangedCombatNode()->SetIsWithinCombatRange(distance <= tempEnemy->GetMaxRange() && distance >= tempEnemy->GetMinRange());
+
+			}
+		}
+
+
 		switch (m_LOSMode)
 		{
-		case 0:
-			CheckAllNodesWithTarget(m_pEnemy);
+		case LOSMode::TARGET:
+			m_checkAllNodesWithTarget(GetTarget());
 			break;
-		case 1:
-			CheckAllNodesWithTarget(m_pPlayer);
+		case LOSMode::SHIP:
+			for (const auto enemy : m_pEnemyPool->GetPool())
+			{
+				m_checkAllNodesWithTarget(enemy);
+			}
 			break;
-		case 2:
-			CheckAllNodesWithBoth();
+		case LOSMode::BOTH:
+			m_checkAllNodesWithBoth();
 			break;
 		}
+
+		m_RemainingEnemiesLabel->SetColour({ 128,128,128,255 });
+		m_RemainingEnemiesLabel->SetText(std::to_string(m_pEnemyPool->GetPool().size()));
+
+		// Check to see if enemy is off screen, if so then spawn another enemy and destroy said enemy.
+		for (auto enemy : m_pEnemyPool->GetPool())
+		{
+			if (!m_gameWon)
+			{
+				if ((enemy->GetTransform()->position.x > 800.0f || enemy->GetTransform()->position.x < 0)
+					&& (enemy->GetTransform()->position.y > 600.0f || enemy->GetTransform()->position.y < 0))
+				{
+					if (enemy->GetEnemyType() == EnemyType::CLOSE_COMBAT)
+					{
+						m_pEnemyPool->SpawnEnemy(new CloseCombatEnemy(this), EnemyType::CLOSE_COMBAT);
+					}
+					else {
+						m_pEnemyPool->SpawnEnemy(new RangedCombatEnemy(this), EnemyType::RANGED);
+					}
+					enemy->SetDeleteMe(true);
+				}
+			}
+		}
+		if (m_gameWon)
+		{
+			SoundManager::Instance().PlaySoundFX("yippe");
+			Game::Instance().ChangeSceneState(SceneState::WIN);
+		}
+		else if (m_gameLost)
+		{
+			SoundManager::Instance().PlaySoundFX("lose");
+			Game::Instance().ChangeSceneState(SceneState::LOSE);
+		}
 	}
+
 }
 
 void PlayScene::Clean()
@@ -111,525 +176,459 @@ void PlayScene::Clean()
 	RemoveAllChildren();
 }
 
-
 void PlayScene::HandleEvents()
 {
-	EventManager::Instance().Update();
-
-	GetPlayerInput();
-
-	GetKeyboardInput();
-}
-
-void PlayScene::GetPlayerInput()
-{
-	// debug controls
-	if (EventManager::Instance().KeyPressed(SDL_SCANCODE_H) && m_bDebugView == false)
+	if (!m_gameWon)
 	{
-		SetGridEnabled(true);
-		m_bDebugView = true;
-		ToggleGrid(true);
-	}
-	else if (EventManager::Instance().KeyPressed(SDL_SCANCODE_H) && m_bDebugView == true)
-	{
-		SetGridEnabled(false);
-		m_bDebugView = false;
-		ToggleGrid(false);
-	}
-	if(EventManager::Instance().KeyPressed(SDL_SCANCODE_K))
-	{
-		m_pEnemy->SetAnimationState(EnemyAnimatioState::ENEMY_HIT);
-		SoundManager::Instance().PlaySound("enemy hit");
-		m_pEnemyHealth--;
-	}
-	if (EventManager::Instance().KeyPressed(SDL_SCANCODE_P) && m_pEnemy->GetPatrollingEnabled() == true)
-		m_pEnemy->IsPatrolling(false);
-	else if (EventManager::Instance().KeyPressed(SDL_SCANCODE_P) && m_pEnemy->GetPatrollingEnabled() == false)
-		m_pEnemy->IsPatrolling(true);
+		EventManager::Instance().Update();
 
-
-	switch (m_pCurrentInputType)
-	{
-	case static_cast<int>(InputType::GAME_CONTROLLER):
-	{
-		// handle player movement with GameController
-		if (SDL_NumJoysticks() > 0)
+		if (EventManager::Instance().IsKeyDown(SDL_SCANCODE_ESCAPE))
 		{
-			if (EventManager::Instance().GetGameController(0) != nullptr)
-			{
-				constexpr auto dead_zone = 10000;
-				if (EventManager::Instance().GetGameController(0)->STICK_LEFT_HORIZONTAL > dead_zone)
-				{
-					m_pPlayer->SetAnimationState(PlayerAnimationState::PLAYER_RUN_RIGHT);
-					m_playerFacingRight = true;
-				}
-				else if (EventManager::Instance().GetGameController(0)->STICK_LEFT_HORIZONTAL < -dead_zone)
-				{
-					m_pPlayer->SetAnimationState(PlayerAnimationState::PLAYER_RUN_LEFT);
-					m_playerFacingRight = false;
-				}
-				else
-				{
-					if (m_playerFacingRight)
-					{
-						m_pPlayer->SetAnimationState(PlayerAnimationState::PLAYER_IDLE_RIGHT);
-					}
-					else
-					{
-						m_pPlayer->SetAnimationState(PlayerAnimationState::PLAYER_IDLE_LEFT);
-					}
-				}
-			}
+			Game::Instance().Quit();
 		}
-	}
-	break;
-	case static_cast<int>(InputType::KEYBOARD_MOUSE):
-	{
-		// handle player movement with mouse and keyboard
-		if (EventManager::Instance().IsKeyDown(SDL_SCANCODE_A))
-		{
-			m_pPlayer->SetAnimationState(PlayerAnimationState::PLAYER_RUN_LEFT);
-			m_pPlayer->GetTransform()->position -= glm::vec2(5.0f, 0.0f);
-			m_playerFacingRight = false;
-			SoundManager::Instance().PlaySound("footstep");
+
+		// Toggles into Debug View
+		if (EventManager::Instance().KeyPressed(SDL_SCANCODE_H)) {
+			Game::Instance().SetDebugMode(!m_isGridEnabled);
+			m_isGridEnabled = !m_isGridEnabled;
+			m_toggleGrid(m_isGridEnabled);
 		}
-		else if (EventManager::Instance().IsKeyDown(SDL_SCANCODE_D))
+
+		if (EventManager::Instance().IsKeyDown(SDL_SCANCODE_1))
 		{
-			m_pPlayer->SetAnimationState(PlayerAnimationState::PLAYER_RUN_RIGHT);
-			m_pPlayer->GetTransform()->position += glm::vec2(5.0f, 0.0f);
-			m_playerFacingRight = true;
-			SoundManager::Instance().PlaySound("footstep");
+			Game::Instance().ChangeSceneState(SceneState::START);
 		}
-		else if (EventManager::Instance().IsKeyDown(SDL_SCANCODE_W))
+
+		if (EventManager::Instance().IsKeyDown(SDL_SCANCODE_2))
 		{
-			m_pPlayer->SetAnimationState(PlayerAnimationState::PLAYER_RUN_LEFT);
-			m_pPlayer->GetTransform()->position -= glm::vec2(0.0f, 5.0f);
-			m_playerFacingRight = false;
-			SoundManager::Instance().PlaySound("footstep");
+			Game::Instance().ChangeSceneState(SceneState::LOSE);
+		}
+
+		// Player movement stuff
+		if (EventManager::Instance().IsKeyDown(SDL_SCANCODE_W))
+		{
+			m_pPlayer->SetAnimationState(PlayerAnimationState::PLAYER_RUN_DOWN);
+
+			m_pPlayer->GetRigidBody()->velocity.y -= 12.5f;
+			//SoundManager::Instance().Play_Sound("footsteps");
 		}
 		else if (EventManager::Instance().IsKeyDown(SDL_SCANCODE_S))
 		{
-			m_pPlayer->SetAnimationState(PlayerAnimationState::PLAYER_RUN_RIGHT);
-			m_pPlayer->GetTransform()->position += glm::vec2(0.0f, 5.0f);
-			m_playerFacingRight = true;
-			SoundManager::Instance().PlaySound("footstep");
+			m_pPlayer->SetAnimationState(PlayerAnimationState::PLAYER_RUN_UP);
+			m_pPlayer->GetRigidBody()->velocity.y += 12.5f;
+			//SoundManager::Instance().Play_Sound("footsteps");
 		}
-		else if (EventManager::Instance().MousePressed(1))
-		{
-			m_pPlayer->SetAnimationState(PlayerAnimationState::PLAYER_ATTACK_CLOSE);
-			std::cout << "close combat\n";
-			SoundManager::Instance().PlaySound("player attack");
-			if(CollisionManager::AABBCheck(m_pPlayer, m_pEnemy))
-			{
-				std::cout << "enemy takes damage\n";
-				m_pEnemy->SetAnimationState(EnemyAnimatioState::ENEMY_HIT);
-				SoundManager::Instance().PlaySound("enemy hit");
-				m_pEnemyHealth--;
-			}
-		}
-		else if (EventManager::Instance().MousePressed(3))
-		{
-			m_pPlayer->SetAnimationState(PlayerAnimationState::PLAYER_ATTACK_FIRE);
-			std::cout << "ranged combat\n";
-			SoundManager::Instance().PlaySound("player firing");
-		}
-		else
-		{
-			if (m_playerFacingRight)
-			{
-				m_pPlayer->SetAnimationState(PlayerAnimationState::PLAYER_IDLE_RIGHT);
-			}
-			else
-			{
-				m_pPlayer->SetAnimationState(PlayerAnimationState::PLAYER_IDLE_LEFT);
-			}
-		}
-	}
-	break;
-	case static_cast<int>(InputType::ALL):
-	{
-		if (SDL_NumJoysticks() > 0)
-		{
-			if (EventManager::Instance().GetGameController(0) != nullptr)
-			{
-				constexpr auto dead_zone = 10000;
-				if (EventManager::Instance().GetGameController(0)->STICK_LEFT_HORIZONTAL > dead_zone
-					|| EventManager::Instance().IsKeyDown(SDL_SCANCODE_D))
-				{
-					m_pPlayer->SetAnimationState(PlayerAnimationState::PLAYER_RUN_RIGHT);
-					m_playerFacingRight = true;
-				}
-				else if (EventManager::Instance().GetGameController(0)->STICK_LEFT_HORIZONTAL < -dead_zone
-					|| EventManager::Instance().IsKeyDown(SDL_SCANCODE_A))
-				{
-					m_pPlayer->SetAnimationState(PlayerAnimationState::PLAYER_RUN_LEFT);
-					m_playerFacingRight = false;
-				}
-				else
-				{
-					if (m_playerFacingRight)
-					{
-						m_pPlayer->SetAnimationState(PlayerAnimationState::PLAYER_IDLE_RIGHT);
-					}
-					else
-					{
-						m_pPlayer->SetAnimationState(PlayerAnimationState::PLAYER_IDLE_LEFT);
-					}
-				}
-			}
-		}
-		else if (EventManager::Instance().IsKeyDown(SDL_SCANCODE_A))
+		if (EventManager::Instance().IsKeyDown(SDL_SCANCODE_A))
 		{
 			m_pPlayer->SetAnimationState(PlayerAnimationState::PLAYER_RUN_LEFT);
-			m_playerFacingRight = false;
+			m_pPlayer->GetRigidBody()->velocity.x -= 12.5f;
+			//SoundManager::Instance().Play_Sound("footsteps");
 		}
 		else if (EventManager::Instance().IsKeyDown(SDL_SCANCODE_D))
 		{
 			m_pPlayer->SetAnimationState(PlayerAnimationState::PLAYER_RUN_RIGHT);
-			m_playerFacingRight = true;
+			m_pPlayer->GetRigidBody()->velocity.x += 12.5f;
+			//SoundManager::Instance().Play_Sound("footsteps");
 		}
-		else
+		if (EventManager::Instance().MousePressed(1))
 		{
-			if (m_playerFacingRight)
-			{
-				m_pPlayer->SetAnimationState(PlayerAnimationState::PLAYER_IDLE_RIGHT);
+			std::cout << "Mouse 1 Pressed" << std::endl;
+			// If player attack radius is touching the enemy in any way, melee attack!
+			//SoundManager::Instance().Play_Sound("swipe");
+			for (auto enemy : m_pEnemyPool->GetPool()) {
+				if (Util::GetClosestEdge(m_pPlayer->GetTransform()->position, enemy) <= m_pPlayer->GetRangeOfAttack()) {
+					m_pPlayer->MeleeAttack();
+					enemy->TakeDamage(m_pPlayer->GetDamage());
+					enemy->SetIsHit(true);
+				}
+				else
+				{
+					enemy->SetIsHit(false);
+				}
 			}
-			else
+
+		}
+		if (EventManager::Instance().MousePressed(3))
+		{
+			std::cout << "Mouse 2 Pressed" << std::endl;
+			if (m_pTorpedoPool->GetPool().size() < 2)
 			{
-				m_pPlayer->SetAnimationState(PlayerAnimationState::PLAYER_IDLE_LEFT);
+				Torpedo* temp = new TorpedoFederation(5.0f, Util::Normalize({ EventManager::Instance().GetMousePosition() - m_pPlayer->GetTransform()->position }));
+				temp->SetTorpedoType(PLAYER);
+				m_pTorpedoPool->FireTorpedo(temp);
+				m_pTorpedoPool->GetPool().back()->GetTransform()->position = m_pPlayer->GetTransform()->position; // Set the spawn point
+				SoundManager::Instance().SetSoundVolume(50);
+				SoundManager::Instance().PlaySoundFX("carrot");
+			}
+			else {
+				std::cout << "Cannot shoot yet." << std::endl;
+			}
+
+		}
+
+		if (Game::Instance().GetDebugMode())
+		{
+			if (EventManager::Instance().KeyPressed(SDL_SCANCODE_K))
+			{
+				for (const auto enemy : m_pEnemyPool->GetPool())
+				{
+					enemy->TakeDamage(10); // enemy takes fixed dmg.
+					if (enemy->GetEnemyType() == EnemyType::CLOSE_COMBAT)
+					{
+						dynamic_cast<CloseCombatEnemy*>(enemy)->GetTree()->GetEnemyHitNode()->SetHit(true);
+					}
+					else {
+						dynamic_cast<RangedCombatEnemy*>(enemy)->GetTree()->GetEnemyHitNode()->SetHit(true);
+					}
+					std::cout << "Starship at" << enemy->GetHealth() << "%. " << std::endl;
+				}
+
+			}
+
+			if (EventManager::Instance().KeyPressed(SDL_SCANCODE_R))
+			{
+				m_pEnemyPool->SpawnEnemy(new CloseCombatEnemy(this), EnemyType::CLOSE_COMBAT);
+				m_pEnemyPool->SpawnEnemy(new RangedCombatEnemy(this), EnemyType::RANGED);
+			}
+
+			if (EventManager::Instance().KeyPressed(SDL_SCANCODE_P))
+			{
+				for (const auto enemy : m_pEnemyPool->GetPool())
+				{
+					enemy->SetHealth(100); // Enemy Sets health
+
+					if (enemy->GetEnemyType() == EnemyType::CLOSE_COMBAT)
+					{
+						dynamic_cast<CloseCombatEnemy*>(enemy)->SetIsHit(true);
+						dynamic_cast<CloseCombatEnemy*>(enemy)->GetTree()->GetPlayerDetectedNode()->SetPlayerDetected(false);
+					}
+					else { // if (enemy->GetType() == EnemyType::RANGED)
+						dynamic_cast<CloseCombatEnemy*>(enemy)->SetIsHit(true);
+						dynamic_cast<RangedCombatEnemy*>(enemy)->GetTree()->GetPlayerDetectedNode()->SetPlayerDetected(false);
+					}
+
+				}
+
 			}
 		}
-	}
-	break;
-	}
-}
-
-void PlayScene::GetKeyboardInput()
-{
-	if (EventManager::Instance().IsKeyDown(SDL_SCANCODE_ESCAPE))
-	{
-		Game::Instance().Quit();
-	}
-
-	if (EventManager::Instance().IsKeyDown(SDL_SCANCODE_1))
-	{
-		Game::Instance().ChangeSceneState(SceneState::START);
-	}
-
-	if (EventManager::Instance().IsKeyDown(SDL_SCANCODE_2))
-	{
-		Game::Instance().ChangeSceneState(SceneState::END);
 	}
 }
 
 void PlayScene::Start()
 {
 	// Set GUI Title
-	m_guiTitle = "Play Scene";
+	m_guiTitle = "ASSIGNMENT 4";
 
-	// Set Input Type
-	m_pCurrentInputType = static_cast<int>(InputType::KEYBOARD_MOUSE);
+	// Setup a few more fields
+	m_LOSMode = LOSMode::TARGET;
+	m_pathNodeLOSDistance = 1000; // 1000px distance
+	m_setPathNodeLOSDistance(m_pathNodeLOSDistance);
 
-	m_pBG = new Background();
-	AddChild(m_pBG);
-	
-	// Player Sprite
-	m_pPlayer = new Player();
-	AddChild(m_pPlayer, 3);
-	m_playerFacingRight = true;
+	// Add Game Objects
+	m_pBackground = new Background();
+	AddChild(m_pBackground, 0);
 
-	m_pEnemy = new Enemy();
-	m_pEnemy->GetTransform()->position = glm::vec2(650.f, 200.f);
-	AddChild(m_pEnemy, 2);
+	m_pTarget = new Target();
+	m_pTarget->GetTransform()->position = glm::vec2(550.0f, 300.0f);
+	AddChild(m_pTarget, 2);
 
-	// New Obstacle creation
-	std::ifstream inFile("../Assets/data/obstacles.txt");
-	while (!inFile.eof())
-	{
-		Obstacle* temp = new Obstacle();
-		float x, y, w, h;
-		inFile >> x >> y >> w >> h;
-		temp->GetTransform()->position = glm::vec2(x, y);
-		temp->SetWidth(w);
-		temp->SetHeight(h);
-		AddChild(temp, 4);
-		m_pObstacles.push_back(temp);
-	}
-	inFile.close();
+#if defined(CLOSE_COMBAT)
+	m_pStarShip = new CloseCombatEnemy(this);
+#else
+	m_pStarShip = new RangedCombatEnemy(this);
+#endif
+	m_pStarShip->GetTransform()->position = glm::vec2(150.0f, 300.0f);
+	AddChild(m_pStarShip, 2);
 
-	m_pHealthBar = new HealthBar();
-	AddChild(m_pHealthBar, 5);
+	m_pTorpedoPool = new TorpedoPool();
+	AddChild(m_pTorpedoPool, 2);
 
-	// Setup a few fields
-	m_LOSMode = 0;
-	m_pathNodeLOSDistance = 1000;
-	SetPathNodeLOSDistance(m_pathNodeLOSDistance);
+	// Add Obstacles
+	BuildObstaclePool();
 
-	// Setup the grid
+	// Setup the Grid
 	m_isGridEnabled = false;
-	BuildGrid();
-	ToggleGrid(m_isGridEnabled);
+	m_buildGrid();
+	m_toggleGrid(m_isGridEnabled);
 
-	// create decision tree
-	m_decTree = new DecisionTree(m_pEnemy);
-	m_decTree->Display();
-	// m_decTree->MakeDecision(); // if you don't want every frame
 
-	// sound loads
-	SoundManager::Instance().Load("../Assets/Audio/bgmusic.wav", "bg", SoundType::SOUND_MUSIC);
-	SoundManager::Instance().Load("../Assets/Audio/enemydie.wav", "enemy death", SoundType::SOUND_SFX);
-	SoundManager::Instance().Load("../Assets/Audio/enemyhit.wav", "enemy hit", SoundType::SOUND_SFX);
-	SoundManager::Instance().Load("../Assets/Audio/footstep.wav", "footstep", SoundType::SOUND_SFX);
-	SoundManager::Instance().Load("../Assets/Audio/playerattack.wav", "player attack", SoundType::SOUND_SFX);
-	SoundManager::Instance().Load("../Assets/Audio/playerfiring.wav", "player firing", SoundType::SOUND_SFX);
+	// Preload Sounds
 
-	SoundManager::Instance().PlayMusic("bg");
-	SoundManager::Instance().SetMusicVolume(8);
-	SoundManager::Instance().AllocateChannels(16);
-	SoundManager::Instance().SetSoundVolume(36);
+	SoundManager::Instance().Load("../Assets/Audio/yay.ogg", "yay", SoundType::SOUND_SFX);
+	SoundManager::Instance().Load("../Assets/Audio/thunder.ogg", "thunder", SoundType::SOUND_SFX);
+	SoundManager::Instance().Load("../Assets/Audio/torpedo.ogg", "torpedo", SoundType::SOUND_SFX);
+	SoundManager::Instance().Load("../Assets/Audio/torpedo_k.ogg", "torpedo_k", SoundType::SOUND_SFX);
 
-	/* DO NOT REMOVE */
-	ImGuiWindowFrame::Instance().SetGuiFunction([this] { GUI_Function(); });
+
+	// Preload music
+	SoundManager::Instance().Load("../Assets/Audio/Klingon.mp3", "klingon", SoundType::SOUND_MUSIC);
+	SoundManager::Instance().SetMusicVolume(16);
+
+	// Play Music
+	SoundManager::Instance().PlayMusic("klingon");
+
+	ImGuiWindowFrame::Instance().SetGuiFunction(std::bind(&PlayScene::GUI_Function, this));
+}
+
+void PlayScene::SpawnEnemyTorpedo()
+{
+	// Set Spawn Point (ront of our d7
+	glm::vec2 spawn_point = m_pStarShip->GetTransform()->position + m_pStarShip->GetCurrentDirection() * 30.0f;
+
+	// Set the direction of the Torpedo (normalized)
+	glm::vec2 torpedo_direction = Util::Normalize(m_pTarget->GetTransform()->position - spawn_point);
+
+	// Spawn the torpedo
+	m_pTorpedoPool->FireTorpedo(new TorpedoKlingon(5.0f, torpedo_direction));
+	m_pTorpedoPool->GetPool().back()->GetTransform()->position = spawn_point; // Set the initial position of the torpedo to the spawn point
+	SoundManager::Instance().PlaySoundFX("torpedo_k");
+}
+
+Target* PlayScene::GetTarget() const
+{
+	return m_pTarget;
+}
+
+std::vector<PathNode*> PlayScene::GetGrid()
+{
+	return m_pGrid;
 }
 
 void PlayScene::GUI_Function()
 {
-	auto offset = glm::vec2(Config::TILE_SIZE * 0.5f, Config::TILE_SIZE * 0.5f);
-
 	// Always open with a NewFrame
 	ImGui::NewFrame();
 
 	// See examples by uncommenting the following - also look at imgui_demo.cpp in the IMGUI filter
 	//ImGui::ShowDemoWindow();
-
-	ImGui::Begin("SDL Trek II: The Wrath of Tom", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_MenuBar);
+	
+	ImGui::Begin("GAME3001 - W2023 - Lab 7.1", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_MenuBar );
 
 	ImGui::Separator();
 
 	// Debug Properties
-	if (ImGui::Checkbox("Toggle Grid", &m_bDebugView))
+	if(ImGui::Checkbox("Toggle Grid", &m_isGridEnabled))
 	{
-		ToggleGrid(m_bDebugView);
+		m_toggleGrid(m_isGridEnabled);
 	}
 
 	ImGui::Separator();
 
-	if (ImGui::Button("Node LOS to Enemy", { 300, 20 }))
-	{
-		m_LOSMode = 0;
-	}
-	if (m_LOSMode == 0)
-	{
-		ImGui::SameLine();
-		ImGui::Text("<Active>");
-	}
+	static int LOS_mode = static_cast<int>(m_LOSMode);
+	ImGui::Text("Path Node LOS");
+	ImGui::RadioButton("Target", &LOS_mode, static_cast<int>(LOSMode::TARGET)); ImGui::SameLine();
+	ImGui::RadioButton("StarShip", &LOS_mode, static_cast<int>(LOSMode::SHIP)); ImGui::SameLine();
+	ImGui::RadioButton("Both Target & StarShip", &LOS_mode, static_cast<int>(LOSMode::BOTH));
 
-	if (ImGui::Button("Node LOS to Player", { 300, 20 }))
-	{
-		m_LOSMode = 1;
-	}
-	if (m_LOSMode == 1)
-	{
-		ImGui::SameLine();
-		ImGui::Text("<Active>");
-	}
-
-	if (ImGui::Button("Node LOS to both", { 300, 20 }))
-	{
-		m_LOSMode = 2;
-	}
-	if (m_LOSMode == 2)
-	{
-		ImGui::SameLine();
-		ImGui::Text("<Active>");
-	}
-
-	if (ImGui::SliderInt("PathNode LOS Distance", &m_pathNodeLOSDistance, 0, 1000))
-	{
-		SetPathNodeLOSDistance(m_pathNodeLOSDistance);
-	}
+	m_LOSMode = static_cast<LOSMode>(LOS_mode);
 
 	ImGui::Separator();
 
-	// Static Position Variables
-	m_enemyPosition[0] = m_pEnemy->GetTransform()->position.x;
-	m_enemyPosition[1] = m_pEnemy->GetTransform()->position.y;
+	if(ImGui::SliderInt("Path Node LOS Distance", &m_pathNodeLOSDistance, 0, 1000))
+	{
+		m_setPathNodeLOSDistance(m_pathNodeLOSDistance);
+	}
+
+	ImGui::Separator();
 
 	// StarShip Properties
-	m_playerPosition[0] = m_pPlayer->GetTransform()->position.x;
-	m_playerPosition[1] = m_pPlayer->GetTransform()->position.y;
-
-	if (ImGui::SliderInt2("Player Position", m_playerPosition, 0, 800))
+	static int shipPosition[] = { static_cast<int>(m_pStarShip->GetTransform()->position.x),
+		static_cast<int>(m_pStarShip->GetTransform()->position.y) };
+	if(ImGui::SliderInt2("Ship Position", shipPosition, 0, 800))
 	{
-		m_pPlayer->GetTransform()->position.x = m_playerPosition[0];
-		m_pPlayer->GetTransform()->position.y = m_playerPosition[1];
+		m_pStarShip->GetTransform()->position.x = static_cast<float>(shipPosition[0]);
+		m_pStarShip->GetTransform()->position.y = static_cast<float>(shipPosition[1]);
+	}
 
+	// allow the ship to rotate
+	static int angle;
+	if(ImGui::SliderInt("Ship Direction", &angle, -360, 360))
+	{
+		m_pStarShip->SetCurrentHeading(static_cast<float>(angle));
 	}
 
 	ImGui::Separator();
 
 	// Target Properties
-	if (ImGui::SliderInt2("Enemy Position", m_enemyPosition, 0, 800))
+	static int targetPosition[] = { static_cast<int>(m_pTarget->GetTransform()->position.x),
+		static_cast<int>(m_pTarget->GetTransform()->position.y) };
+	if (ImGui::SliderInt2("Target Position", targetPosition, 0, 800))
 	{
-		m_pEnemy->GetTransform()->position.x = m_enemyPosition[0];
-		m_pEnemy->GetTransform()->position.y = m_enemyPosition[1];
+		m_pTarget->GetTransform()->position.x = static_cast<float>(targetPosition[0]);
+		m_pTarget->GetTransform()->position.y = static_cast<float>(targetPosition[1]);
 	}
 
 	ImGui::Separator();
 
-	bool isPatrolling = m_pEnemy->GetPatrollingEnabled();
-	if (ImGui::Checkbox("Enemy Patrol", &isPatrolling))
+	// Add Obstacle position control for each obstacle
+	for(unsigned i = 0; i < m_pObstacles.size(); ++i)
 	{
-		m_pEnemy->IsPatrolling(isPatrolling);
+		int obstaclePosition[] = { static_cast<int>(m_pObstacles[i]->GetTransform()->position.x),
+		static_cast<int>(m_pObstacles[i]->GetTransform()->position.y) };
+		std::string label = "Obstacle " + std::to_string(i + 1) + " Position";
+		if(ImGui::SliderInt2(label.c_str(), obstaclePosition, 0, 800))
+		{
+			m_pObstacles[i]->GetTransform()->position.x = static_cast<float>(obstaclePosition[0]);
+			m_pObstacles[i]->GetTransform()->position.y = static_cast<float>(obstaclePosition[1]);
+			m_buildGrid();
+		}
 	}
 
 
 	ImGui::End();
 }
 
-void PlayScene::BuildGrid()
+void PlayScene::BuildObstaclePool()
 {
-	const auto tile_size = Config::TILE_SIZE;
-	const auto offset = glm::vec2(Config::TILE_SIZE * 0.5f, Config::TILE_SIZE * 0.5f);
+	std::ifstream inFile("../Assets/data/obstacles.txt");
 
-	ClearNodes();
+	while(!inFile.eof())
+	{
+		std::cout << "Obstacle " << std::endl;
+		auto obstacle = new Obstacle();
+		float x, y, w, h; // declare variables the same as how the file is organized
+		inFile >> x >> y >> w >> h; // read data from file line by line
+		obstacle->GetTransform()->position = glm::vec2(x, y);
+		obstacle->SetWidth(static_cast<int>(w));
+		obstacle->SetHeight(static_cast<int>(h));
+		AddChild(obstacle, 0);
+		m_pObstacles.push_back(obstacle);
+	}
+	inFile.close();
+}
 
-	// layout a grid of tiles
+void PlayScene::m_buildGrid()
+{
+	constexpr auto tile_size = Config::TILE_SIZE;
+	constexpr auto offset = glm::vec2(Config::TILE_SIZE * 0.5f, Config::TILE_SIZE * 0.5f);
+
+	m_clearNodes(); // we will need to clear nodes because we will rebuild/redraw the grid if we move an obstacle
+
+	// lay out a grid of path_nodes
 	for (int row = 0; row < Config::ROW_NUM; ++row)
 	{
 		for (int col = 0; col < Config::COL_NUM; ++col)
 		{
-			PathNode* pathNode = new PathNode();
-			pathNode->GetTransform()->position = glm::vec2((col * tile_size) + offset.x,
-				(row * tile_size) + offset.y);
-			// Collision check with node against all obstacles.
-			bool keepNode = true;
-			for (auto obstacle : m_pObstacles)
+			auto path_node = new PathNode();
+			path_node->GetTransform()->position = glm::vec2(static_cast<float>(col) * tile_size + offset.x,
+				static_cast<float>(row) * tile_size + offset.y);
+
+			// only show grid where there are no obstacles
+			bool keep_node = true;
+			for (const auto obstacle : m_pObstacles)
 			{
-				if (CollisionManager::AABBCheck(pathNode, obstacle))
-					keepNode = false;
+				// add the Obstacle Buffer TODO: this can be improved
+				const auto buffer = new Obstacle();
+				buffer->GetTransform()->position = obstacle->GetTransform()->position;
+				buffer->SetWidth(obstacle->GetWidth() + 40);
+				buffer->SetHeight(obstacle->GetHeight() + 40);
+
+				// determine which path_nodes to keep
+				if(CollisionManager::AABBCheck(path_node, buffer))
+				{
+					keep_node = false;
+				}
 			}
-			if (keepNode == true) // Add path node to grid.
+			if(keep_node)
 			{
-				AddChild(pathNode);
-				m_pGrid.push_back(pathNode);
+				AddChild(path_node);
+				m_pGrid.push_back(path_node);
 			}
-			else // Discard path node.
-				delete pathNode;
-		}
-	}
-}
-
-void PlayScene::ToggleGrid(bool state)
-{
-	for (auto pathNode : m_pGrid)
-	{
-		pathNode->SetVisible(state);
-	}
-}
-
-bool PlayScene::GetGridEnabled() const
-{
-	return m_isGridEnabled;
-}
-
-bool PlayScene::CheckPathNodeLOS(PathNode* path_node, DisplayObject* target_object)
-{
-	return CheckAgentLOS(path_node, target_object);
-}
-
-void PlayScene::CheckAllNodesWithTarget(DisplayObject* target_object)
-{
-	for (auto path_node : m_pGrid)
-	{
-		// Check angle to target for LOS distance.
-		auto targetDirection = target_object->GetTransform()->position - path_node->GetTransform()->position;
-		auto normalizedDirection = Util::Normalize(targetDirection);
-		path_node->SetCurrentDirection(normalizedDirection);
-		CheckPathNodeLOS(path_node, target_object);
-	}
-}
-
-void PlayScene::CheckAllNodesWithBoth()
-{
-	for (auto path_node : m_pGrid)
-	{
-		auto targetDirection = m_pPlayer->GetTransform()->position - path_node->GetTransform()->position;
-		auto normalizedDirection = Util::Normalize(targetDirection);
-		path_node->SetCurrentDirection(normalizedDirection);
-
-		bool LOSWithStarShip = CheckPathNodeLOS(path_node, m_pPlayer);
-
-		targetDirection = m_pEnemy->GetTransform()->position - path_node->GetTransform()->position;
-		normalizedDirection = Util::Normalize(targetDirection);
-		path_node->SetCurrentDirection(normalizedDirection);
-
-		bool LOSWithTarget = CheckPathNodeLOS(path_node, m_pEnemy);
-
-		path_node->SetHasLOS((LOSWithStarShip && LOSWithTarget));
-
-		if (LOSWithStarShip && LOSWithTarget)
-		{
-			std::cout << "LOS between player and enemy.\n";
-			m_LOSWithBoth = true;
-		}
-		else
-			m_LOSWithBoth = false;
-	}
-}
-
-void PlayScene::SetPathNodeLOSDistance(int dist)
-{
-	for (auto path_node : m_pGrid)
-	{
-		path_node->SetLOSDistance((float)dist);
-	}
-}
-
-void PlayScene::SetGridEnabled(const bool state)
-{
-	m_isGridEnabled = state;
-}
-
-bool PlayScene::CheckAgentLOS(Agent* agent, DisplayObject* target_object)
-{
-	bool hasLOS = false;
-	agent->SetHasLOS(hasLOS);
-	// If ship to target distance is <= LOS distance
-	auto AgentToTargetDist = Util::GetClosestEdge(agent->GetTransform()->position, target_object);
-	if (AgentToTargetDist <= agent->GetLOSDistance())
-	{
-		std::vector<DisplayObject*> contactList;
-		for (auto object : GetDisplayList())
-		{
-
-			if (object->GetType() == GameObjectType::OBSTACLE)
+			else
 			{
-				auto AgentToObjectDist = Util::GetClosestEdge(agent->GetTransform()->position, object);
-				if (AgentToObjectDist > AgentToTargetDist) continue;
-				contactList.push_back(object);
+				delete path_node;
 			}
 		}
-		const glm::vec2 agentEndPoint = agent->GetTransform()->position + agent->GetCurrentDirection() * agent->GetLOSDistance();
-		hasLOS = CollisionManager::LOSCheck(agent, agentEndPoint, contactList, target_object);
-		agent->SetHasLOS(hasLOS);
+
+		// if Grid is supposed to be hidden - make it so!
+		m_toggleGrid(m_isGridEnabled);
 	}
-	return hasLOS;
 }
 
-void PlayScene::StoreObstacles()
+void PlayScene::m_toggleGrid(const bool state) const
 {
-
-}
-
-void PlayScene::ClearNodes()
-{
-	for (auto object : GetDisplayList())
+	for (const auto path_node : m_pGrid)
 	{
-		if (object->GetType() == GameObjectType::PATH_NODE)
-		{
-			RemoveChild(object);
-		}
+		path_node->SetVisible(state);
 	}
+}
+
+void PlayScene::m_clearNodes()
+{
 	m_pGrid.clear();
+	for (const auto display_object : GetDisplayList())
+	{
+		if(display_object->GetType() == GameObjectType::PATH_NODE)
+		{
+			RemoveChild(display_object);
+		}
+	}
+}
+
+bool PlayScene::m_checkAgentLOS(Agent* agent, DisplayObject* target_object) const
+{
+	bool has_LOS = false; // default - No LOS
+	agent->SetHasLOS(has_LOS);
+
+	// if ship to target distance is less than or equal to the LOS Distance (Range)
+	const auto agent_to_range = Util::GetClosestEdge(agent->GetTransform()->position, target_object);
+	if (agent_to_range <= agent->GetLOSDistance())
+	{
+		// we are in within LOS Distance 
+		std::vector<DisplayObject*> contact_list;
+		for (auto display_object : GetDisplayList())
+		{
+			if((display_object->GetType() != GameObjectType::AGENT)
+				&& (display_object->GetType() != GameObjectType::PATH_NODE)
+				&& (display_object->GetType() != GameObjectType::TARGET))
+			{
+				const auto agent_to_object_distance = Util::GetClosestEdge(agent->GetTransform()->position, display_object);
+
+				if (agent_to_object_distance > agent_to_range) { contact_list.push_back(display_object); } // target is out of range
+
+			}
+		}
+
+		const glm::vec2 agent_LOS_endPoint = agent->GetTransform()->position + agent->GetCurrentDirection() * agent->GetLOSDistance();
+		has_LOS = CollisionManager::LOSCheck(agent, agent_LOS_endPoint, contact_list, target_object);
+
+		const auto LOSColour = (target_object->GetType() == GameObjectType::AGENT) ? glm::vec4(0, 0, 1, 1) : glm::vec4(0, 1, 0, 1);
+		agent->SetHasLOS(has_LOS, LOSColour);
+	}
+	return has_LOS;
+}
+
+bool PlayScene::m_checkPathNodeLOS(PathNode* path_node, DisplayObject* target_object) const
+{
+	// check angle to the target so we can still use LOS Distance for path_nodes
+	const auto target_direction = target_object->GetTransform()->position - path_node->GetTransform()->position;
+	const auto normalized_direction = Util::Normalize(target_direction); // changes direction vector to a unit vector (magnitude of 1)
+	path_node->SetCurrentDirection(normalized_direction);
+	return m_checkAgentLOS(path_node, target_object);
+}
+
+void PlayScene::m_checkAllNodesWithTarget(DisplayObject* target_object) const
+{
+	for (const auto path_node : m_pGrid)
+	{
+		m_checkPathNodeLOS(path_node, target_object);
+	}
+}
+
+void PlayScene::m_checkAllNodesWithBoth() const
+{
+	for (const auto path_node : m_pGrid)
+	{
+		const bool LOSWithStarShip = m_checkPathNodeLOS(path_node, m_pStarShip);
+		const bool LOSWithTarget = m_checkPathNodeLOS(path_node, m_pTarget);
+		path_node->SetHasLOS(LOSWithStarShip && LOSWithTarget, glm::vec4(0, 1, 1, 1));
+	}
+}
+
+void PlayScene::m_setPathNodeLOSDistance(const int distance) const
+{
+	for (const auto path_node : m_pGrid)
+	{
+		path_node->SetLOSDistance(static_cast<float>(distance));
+	}
 }

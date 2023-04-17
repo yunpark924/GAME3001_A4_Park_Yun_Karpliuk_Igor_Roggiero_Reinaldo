@@ -1,12 +1,13 @@
 #pragma once
-#ifndef __ATTACK_ACTION__
-#define __ATTACK_ACTION__
+#ifndef __ATTACKACTION_H__
+#define __ATTACKACTION_H__
+
 #include "ActionNode.h"
 
 class AttackAction : public ActionNode
 {
 public:
-	AttackAction();
+	AttackAction(Agent* agent = nullptr);
 	virtual ~AttackAction();
 
 	virtual void Action() override;
@@ -14,4 +15,4 @@ private:
 
 };
 
-#endif /* defined (__ATTACK_ACTION__) */
+#endif //!__ATTACKACTION_H__

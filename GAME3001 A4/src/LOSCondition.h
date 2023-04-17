@@ -1,20 +1,17 @@
 #pragma once
-#ifndef __LOS_CONDITION__
-#define __LOS_CONDITION__
+#ifndef __LOS_CONDITION_H__
+#define __LOS_CONDITION_H__
+
 #include "ConditionNode.h"
 
 class LOSCondition : public ConditionNode
 {
 public:
-	LOSCondition(bool LOS = false);
+	LOSCondition(Agent* agent = nullptr);
+
 	virtual ~LOSCondition();
 
-	// Getters and Setters
-	void SetLOS(bool state);
-
 	virtual bool Condition() override;
-private:
-	bool m_hasLOS;
 };
 
-#endif /* defined (__LOS_CONDITION__) */
+#endif // !__LOS_CONDITION_H__

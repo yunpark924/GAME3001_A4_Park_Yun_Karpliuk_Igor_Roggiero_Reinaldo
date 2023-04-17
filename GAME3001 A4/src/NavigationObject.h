@@ -1,9 +1,9 @@
 #pragma once
 #ifndef __NAVIGATION_OBJECT__
 #define __NAVIGATION_OBJECT__
-#include "Sprite.h"
+#include "DisplayObject.h"
 
-class NavigationObject : public Sprite
+class NavigationObject : public DisplayObject
 {
 public:
 	// Constructor

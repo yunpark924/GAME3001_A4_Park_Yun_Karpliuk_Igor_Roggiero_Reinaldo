@@ -1,15 +1,15 @@
 #include "CloseCombatCondition.h"
 
-CloseCombatCondition::CloseCombatCondition(const bool within_combat_range)
+CloseCombatCondition::CloseCombatCondition(Agent* agent, const bool within_combat_range) : ConditionNode(agent)
 {
-	setIsWithinCombatRange(within_combat_range);
-	m_name = "Close Combat Range Condition";
+	m_name = "Close Combat Condition";
+	SetIsWithinCombatRange(within_combat_range);
 }
 
 CloseCombatCondition::~CloseCombatCondition()
 = default;
 
-void CloseCombatCondition::setIsWithinCombatRange(const bool state)
+void CloseCombatCondition::SetIsWithinCombatRange(const bool state)
 {
 	m_isWithinCombatRange = state;
 }

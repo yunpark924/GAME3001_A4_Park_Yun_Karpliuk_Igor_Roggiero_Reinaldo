@@ -1,12 +1,13 @@
 #pragma once
-#ifndef __MOVE_TO_LOS_ACTION__
-#define __MOVE_TO_LOS_ACTION__
+#ifndef __MOVETOLOSACTION_H__
+#define __MOVETOLOSACTION_H__
+
 #include "ActionNode.h"
 
 class MoveToLOSAction : public ActionNode
 {
 public:
-	MoveToLOSAction();
+	MoveToLOSAction(Agent* agent = nullptr);
 	virtual ~MoveToLOSAction();
 
 	virtual void Action() override;
@@ -14,4 +15,4 @@ private:
 
 };
 
-#endif /* defined (__MOVE_TO_LOS_ACTION__) */
+#endif //!__MOVETOLOSACTION_H__

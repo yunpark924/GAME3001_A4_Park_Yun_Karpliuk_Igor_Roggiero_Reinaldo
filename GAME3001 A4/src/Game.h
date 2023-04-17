@@ -57,10 +57,13 @@ public:
 
 	[[nodiscard]] SDL_Window* GetWindow() const;
 
+	bool GetDebugMode();
+	void SetDebugMode(bool is_debug);
+
 private:
 	Game();
 	~Game();
-
+	bool m_isDebugMode;
 	// game properties
 	bool m_bRunning;
 	Uint32 m_frames;

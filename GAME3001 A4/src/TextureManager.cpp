@@ -9,9 +9,7 @@
 #include "Renderer.h"
 
 TextureManager::TextureManager()
-{
-	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best");
-}
+= default;
 
 TextureManager::~TextureManager()
 = default;

@@ -5,6 +5,7 @@ enum class SceneState
 {
 	NO_SCENE = -1,
 	START,
+	LOSE,
 	PLAY,
 	END,
 	NUM_OF_SCENES

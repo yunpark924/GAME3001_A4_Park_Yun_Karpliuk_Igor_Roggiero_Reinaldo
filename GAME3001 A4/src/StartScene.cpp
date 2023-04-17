@@ -46,17 +46,18 @@ void StartScene::HandleEvents()
 void StartScene::Start()
 {
 	const SDL_Color blue = { 0, 0, 255, 255 };
-	const SDL_Color black = { 0, 0, 0, 0 }; //add adl colour black
+	m_pStartLabel = new Label("START SCENE", "Consolas", 80, blue, glm::vec2(400.0f, 40.0f));
+	m_pStartLabel->SetParent(this);
+	AddChild(m_pStartLabel);
 
-	//student number and name
-	m_pInstructionsLabel = new Label("101410893 Subin Lee", "Consolas", 40, black, glm::vec2(400.0f, 100.0f));
+	m_pInstructionsLabel = new Label("Press 1 to Play", "Consolas", 40, blue, glm::vec2(400.0f, 120.0f));
 	m_pInstructionsLabel->SetParent(this);
 	AddChild(m_pInstructionsLabel);
 
-	m_pInstructionsLabel = new Label("101426966 Yun Park ", "Consolas", 40, black, glm::vec2(400.0f, 150.0f));
-	m_pInstructionsLabel->SetParent(this);
-	AddChild(m_pInstructionsLabel);
 
+	m_pShip = new Ship();
+	m_pShip->GetTransform()->position = glm::vec2(400.0f, 300.0f); 
+	AddChild(m_pShip); 
 
 	// Start Button
 	m_pStartButton = new Button();

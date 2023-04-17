@@ -1,9 +1,11 @@
 #pragma once
-#ifndef __TREE_NODE_TYPE__
-#define __TREE_NODE_TYPE__
+#ifndef __TREE_NODE_TYPE_H__
+#define __TREE_NODE_TYPE_H__
+
 enum class TreeNodeType
 {
 	LEFT_TREE_NODE,
-	RIGHT_TREE_NODE
+	RIGHT_TREE_NODE,
 };
-#endif /* defined (__TREE_NODE_TYPE__)*/
+
+#endif //!__TREE_NODE_TYPE_H__

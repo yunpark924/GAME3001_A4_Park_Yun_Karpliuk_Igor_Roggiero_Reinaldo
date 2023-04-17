@@ -1,7 +1,8 @@
 #include "AttackAction.h"
+
 #include <iostream>
 
-AttackAction::AttackAction()
+AttackAction::AttackAction(Agent* agent) : ActionNode(agent)
 {
 	m_name = "Attack Action";
 }
@@ -11,5 +12,10 @@ AttackAction::~AttackAction()
 
 void AttackAction::Action()
 {
-	std::cout << "Performing " << m_name << std::endl;
+	if (GetAgent()->GetActionState() != ActionState::ATTACK)
+	{
+		std::cout << "Performing " << m_name << std::endl;
+		GetAgent()->SetActionState(ActionState::ATTACK);
+	}
+	GetAgent()->Attack();
 }

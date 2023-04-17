@@ -1,7 +1,6 @@
 #include "PathNode.h"
-#include "TextureManager.h"
+
 #include "Util.h"
-#include "Config.h"
 
 PathNode::PathNode()
 {
@@ -13,19 +12,23 @@ PathNode::PathNode()
 
 	SetCurrentHeading(0.0f);
 	SetCurrentDirection(glm::vec2(1.0f, 0.0f));
-
 	SetLOSDistance(1000.0f);
-	SetLOSColour(glm::vec4(0, 0.5, 1, 1));
+	SetLOSColour(glm::vec4(0.0f, 0.5, 1.0f, 1.0f)); // light blue
 }
 
-PathNode::~PathNode() = default;
+PathNode::~PathNode()
+= default;
 
 void PathNode::Draw()
 {
-	Util::DrawRect(GetTransform()->position - glm::vec2(5.0f, 5.0f),
+	Util::DrawRect(GetTransform()->position - glm::vec2(5, 5), 
 		GetWidth(), GetHeight(), GetLOSColour());
 }
 
-void PathNode::Update() {}
+void PathNode::Update()
+{
+}
 
-void PathNode::Clean() {}
+void PathNode::Clean()
+{
+}

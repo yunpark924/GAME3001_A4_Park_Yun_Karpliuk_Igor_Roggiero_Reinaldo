@@ -1,9 +1,10 @@
 #include "MoveToLOSAction.h"
+
 #include <iostream>
 
-MoveToLOSAction::MoveToLOSAction()
+MoveToLOSAction::MoveToLOSAction(Agent* agent) : ActionNode(agent)
 {
-	m_name = "Move To LOS Action";
+	m_name = "MoveToLOS Action";
 }
 
 MoveToLOSAction::~MoveToLOSAction()
@@ -11,5 +12,10 @@ MoveToLOSAction::~MoveToLOSAction()
 
 void MoveToLOSAction::Action()
 {
-	std::cout << "Performing " << m_name << std::endl;
+	if (GetAgent()->GetActionState() != ActionState::MOVE_TO_LOS)
+	{
+		std::cout << "Performing " << m_name << std::endl;
+		GetAgent()->SetActionState(ActionState::MOVE_TO_LOS);
+	}
+	GetAgent()->MoveToLOS();
 }

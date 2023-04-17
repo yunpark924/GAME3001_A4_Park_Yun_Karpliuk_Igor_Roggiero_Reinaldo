@@ -54,6 +54,7 @@ bool Game::Init(const char* title, const int x, const int y, const int width, co
 			{
 				std::cout << "renderer creation success" << std::endl;
 				SDL_SetRenderDrawColor(Renderer::Instance().GetRenderer(), 255, 255, 255, 255);
+				SDL_SetRenderDrawBlendMode(Renderer::Instance().GetRenderer(), SDL_BLENDMODE_BLEND);
 			}
 			else
 			{
@@ -96,7 +97,7 @@ void Game::Start()
 {
 	m_currentSceneState = SceneState::NO_SCENE;
 
-	ChangeSceneState(SceneState::START);
+	ChangeSceneState(SceneState::PLAY);
 }
 
 bool Game::IsRunning() const
@@ -180,6 +181,16 @@ void Game::ChangeSceneState(const SceneState new_state)
 SDL_Window* Game::GetWindow() const
 {
 	return m_pWindow.get();
+}
+
+bool Game::GetDebugMode()
+{
+	return m_isDebugMode;
+}
+
+void Game::SetDebugMode(bool is_debug)
+{
+	m_isDebugMode = is_debug;
 }
 
 void Game::Quit()

@@ -31,12 +31,15 @@ public:
 	// public functions
 	void Seek();
 	void LookWhereYoureGoing(glm::vec2 target_direction);
+	void Reset();
 
 private:
 	// private movement variables
 	float m_maxSpeed;
 	float m_turnRate;
+	float last_rotation;
 	float m_accelerationRate;
+	glm::vec2 m_startPosition;
 
 	// where we want to go
 	glm::vec2 m_desiredVelocity;
@@ -44,6 +47,10 @@ private:
 	// private function
 	void m_move();
 
+	// New for Lab 7.1
+	std::vector<glm::vec2> m_patrolPath;
+	int m_wayPoint;
+	void m_buildPatrolPath();
 };
 
 #endif /* defined (__STARSHIP__)*/

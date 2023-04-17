@@ -1,12 +1,13 @@
 #pragma once
-#ifndef __PATROL_ACTION__
-#define __PATROL_ACTION__
+#ifndef __PATROLACTION_H__
+#define __PATROLACTION_H__
+
 #include "ActionNode.h"
 
 class PatrolAction : public ActionNode
 {
 public:
-	PatrolAction();
+	PatrolAction(Agent* agent = nullptr);
 	virtual ~PatrolAction();
 
 	virtual void Action() override;
@@ -14,4 +15,4 @@ private:
 
 };
 
-#endif /* defined (__PATROL_ACTION__) */
+#endif //!__PATROLACTION_H__

@@ -27,7 +27,7 @@ bool CollisionManager::SquaredRadiusCheck(GameObject* object1, GameObject* objec
 			switch (object2->GetType()) {
 			case GameObjectType::TARGET:
 				std::cout << "Collision with Target!" << std::endl;
-				SoundManager::Instance().PlaySound("yay", 0);
+				SoundManager::Instance().PlaySoundFX("yay", 0);
 
 				break;
 			default:
@@ -46,47 +46,50 @@ bool CollisionManager::SquaredRadiusCheck(GameObject* object1, GameObject* objec
 
 bool CollisionManager::AABBCheck(GameObject* object1, GameObject* object2)
 {
-	// prepare relevant variables
-	const auto p1 = object1->GetTransform()->position;
-	const auto p2 = object2->GetTransform()->position;
 	const auto p1_width = static_cast<float>(object1->GetWidth());
 	const auto p1_height = static_cast<float>(object1->GetHeight());
 	const auto p2_width = static_cast<float>(object2->GetWidth());
 	const auto p2_height = static_cast<float>(object2->GetHeight());
 
-	if (
+	const auto p1Offset = glm::vec2(p1_width * 0.5f, p1_height * 0.5f);
+	const auto p2Offset = glm::vec2(p2_width * 0.5f, p2_height * 0.5f);
+
+	// prepare relevant variables
+	const auto p1 = object1->GetTransform()->position - p1Offset;
+	const auto p2 = object2->GetTransform()->position - p2Offset;
+
+
+	if ( // Collision check.
 		p1.x < p2.x + p2_width &&
 		p1.x + p1_width > p2.x &&
 		p1.y < p2.y + p2_height &&
 		p1.y + p1_height > p2.y
 		)
 	{
-		if (!object2->GetRigidBody()->isColliding) 
+		if (!object2->GetRigidBody()->isColliding)
 		{
-
+			// To prevent sounds from spamming.
 			object2->GetRigidBody()->isColliding = true;
 
-			switch (object2->GetType()) {
+			switch (object1->GetType())
+			{
 			case GameObjectType::TARGET:
 				std::cout << "Collision with Target!" << std::endl;
-				SoundManager::Instance().PlaySound("yay", 0);
 				break;
 			case GameObjectType::OBSTACLE:
 				std::cout << "Collision with Obstacle!" << std::endl;
-				SoundManager::Instance().PlaySound("yay", 0);
 				break;
 			default:
-
 				break;
 			}
-
-			return true;
 		}
+		return true;
+	}
+	else
+	{
+		object2->GetRigidBody()->isColliding = false; // Every frame check.
 		return false;
 	}
-	object2->GetRigidBody()->isColliding = false;
-	return false;
-
 }
 
 bool CollisionManager::LineLineCheck(const glm::vec2 line1_start, const glm::vec2 line1_end, const glm::vec2 line2_start, const glm::vec2 line2_end)
@@ -233,7 +236,7 @@ bool CollisionManager::LineAABBCheck(Ship* object1, GameObject* object2)
 		{
 		case GameObjectType::TARGET:
 			std::cout << "Collision with Obstacle!" << std::endl;
-			SoundManager::Instance().PlaySound("yay", 0);
+			SoundManager::Instance().PlaySoundFX("yay", 0);
 
 			break;
 		default:
@@ -272,9 +275,9 @@ bool CollisionManager::CircleAABBCheck(GameObject* object1, GameObject* object2)
 	if (const auto box_start = object2->GetTransform()->position - glm::vec2(half_box_width, half_box_height); 
 		CircleAABBSquaredDistance(circle_centre, circle_radius, box_start, object2->GetWidth(), object2->GetHeight()) <= (circle_radius * circle_radius))
 	{
-		if (!object2->GetRigidBody()->isColliding) 
+		if (!object1->GetRigidBody()->isColliding) 
 		{
-			object2->GetRigidBody()->isColliding = true;
+			object1->GetRigidBody()->isColliding = true;
 
 			const auto attack_vector = object1->GetTransform()->position - object2->GetTransform()->position;
 			constexpr auto normal = glm::vec2(0.0f, -1.0f);
@@ -285,46 +288,46 @@ bool CollisionManager::CircleAABBCheck(GameObject* object1, GameObject* object2)
 			switch (object2->GetType())
 			{
 			case GameObjectType::TARGET:
-				std::cout << "Collision with Planet!" << std::endl;
-				SoundManager::Instance().PlaySound("yay", 0);
+				std::cout << "Collision with Target!" << std::endl;
+				SoundManager::Instance().PlaySoundFX("thunder", 0);
 				break;
-			case GameObjectType::SHIP:
-			{
-				SoundManager::Instance().PlaySound("thunder", 0);
-				const auto velocity_x = object1->GetRigidBody()->velocity.x;
-				const auto velocity_y = object1->GetRigidBody()->velocity.y;
+			//case GameObjectType::SHIP:
+			//{
+			//	SoundManager::Instance().PlaySoundFX("thunder", 0);
+			//	const auto velocity_x = object1->GetRigidBody()->velocity.x;
+			//	const auto velocity_y = object1->GetRigidBody()->velocity.y;
 
-				if ((attack_vector.x > 0 && attack_vector.y < 0) || (attack_vector.x < 0 && attack_vector.y < 0))
-					// top right or top left
-				{
-					if (angle <= 45)
-					{
-						object1->GetRigidBody()->velocity = glm::vec2(velocity_x, -velocity_y);
-					}
-					else
-					{
-						object1->GetRigidBody()->velocity = glm::vec2(-velocity_x, velocity_y);
-					}
-				}
+			//	if ((attack_vector.x > 0 && attack_vector.y < 0) || (attack_vector.x < 0 && attack_vector.y < 0))
+			//		// top right or top left
+			//	{
+			//		if (angle <= 45)
+			//		{
+			//			object1->GetRigidBody()->velocity = glm::vec2(velocity_x, -velocity_y);
+			//		}
+			//		else
+			//		{
+			//			object1->GetRigidBody()->velocity = glm::vec2(-velocity_x, velocity_y);
+			//		}
+			//	}
 
-				if ((attack_vector.x > 0 && attack_vector.y > 0) || (attack_vector.x < 0 && attack_vector.y > 0))
-					// bottom right or bottom left
-				{
-					if (angle <= 135)
-					{
-						object1->GetRigidBody()->velocity = glm::vec2(-velocity_x, velocity_y);
-					}
-					else
-					{
-						object1->GetRigidBody()->velocity = glm::vec2(velocity_x, -velocity_y);
-					}
-				}
-			}
-			case GameObjectType::AGENT:
-			{
-				SoundManager::Instance().PlaySound("yay", 0);
-			}
-			break;
+			//	if ((attack_vector.x > 0 && attack_vector.y > 0) || (attack_vector.x < 0 && attack_vector.y > 0))
+			//		// bottom right or bottom left
+			//	{
+			//		if (angle <= 135)
+			//		{
+			//			object1->GetRigidBody()->velocity = glm::vec2(-velocity_x, velocity_y);
+			//		}
+			//		else
+			//		{
+			//			object1->GetRigidBody()->velocity = glm::vec2(velocity_x, -velocity_y);
+			//		}
+			//	}
+			//}
+			//case GameObjectType::AGENT:
+			//{
+			//	SoundManager::Instance().PlaySoundFX("yay", 0);
+			//}
+			//break;
 			default:
 
 				break;
@@ -334,7 +337,7 @@ bool CollisionManager::CircleAABBCheck(GameObject* object1, GameObject* object2)
 		}
 		return false;
 	}
-	object2->GetRigidBody()->isColliding = false;
+	object1->GetRigidBody()->isColliding = false;
 	return false;
 
 }

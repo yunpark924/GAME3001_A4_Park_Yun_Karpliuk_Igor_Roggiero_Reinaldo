@@ -1,11 +1,13 @@
 #include "StarShip.h"
+
 #include "Game.h"
 #include "TextureManager.h"
 #include "Util.h"
 
-StarShip::StarShip()
+StarShip::StarShip() : m_maxSpeed(20.0f),
+m_turnRate(5.0f), m_accelerationRate(2.0f), m_startPosition(glm::vec2(300.0f, 500.0f))
 {
-	TextureManager::Instance().Load("../Assets/textures/fish.png", "starship");
+	TextureManager::Instance().Load("../Assets/textures/d7_small.png", "starship");
 
 	const auto size = TextureManager::Instance().GetTextureSize("starship");
 	SetWidth(static_cast<int>(size.x));
@@ -18,15 +20,15 @@ StarShip::StarShip()
 	setIsCentered(true);
 	SetType(GameObjectType::AGENT);
 
-	// Starting Motion Properties
-	m_maxSpeed = 20.0f; // a maximum number of pixels moved per frame
-	m_turnRate = 5.0f; // a maximum number of degrees to turn each time-step
-	m_accelerationRate = 4.0f; // a maximum number of pixels to add to the velocity each frame
+	
+	SetCurrentHeading(0.0f); // Current facing angle
+	SetLOSDistance(400.0f);
+	SetWhiskerAngle(45.0f);
+	SetLOSColour(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)); // Default LOS Colour = Red
 
-	SetCurrentDirection(glm::vec2(1.0f, 0.0f)); // Facing Right
-
-	SetLOSDistance(300.0f);
-
+	// New for Lab 7.1
+	SetActionState(ActionState::NO_ACTION);
+	m_buildPatrolPath();
 }
 
 StarShip::~StarShip()
@@ -34,14 +36,30 @@ StarShip::~StarShip()
 
 void StarShip::Draw()
 {
-	// draw the target
-	TextureManager::Instance().Draw("starship",
+	// draw the StarShip
+	TextureManager::Instance().Draw("starship", 
 		GetTransform()->position, static_cast<double>(GetCurrentHeading()), 255, true);
+
+	// draw the LOS Line
+	Util::DrawLine(GetTransform()->position,
+		GetTransform()->position + GetCurrentDirection() * GetLOSDistance(), GetLOSColour());
 }
 
 void StarShip::Update()
 {
-	//m_move();
+	// Determine which action to perform
+	switch(GetActionState())
+	{
+	case ActionState::PATROL:
+		m_move();
+		break;
+	case ActionState::MOVE_TO_LOS:
+		break;
+	case ActionState::MOVE_TO_PLAYER:
+		break;
+	case ActionState::ATTACK:
+		break;
+	}
 }
 
 void StarShip::Clean()
@@ -92,44 +110,73 @@ void StarShip::SetDesiredVelocity(const glm::vec2 target_position)
 
 void StarShip::Seek()
 {
-	SetDesiredVelocity(GetTargetPosition());
+	// New for Lab 7.1
+	// Find next waypoint if within 10px of the current waypoint
 
-	const glm::vec2 steering_direction = GetDesiredVelocity() - GetCurrentDirection();
+	if (Util::Distance(m_patrolPath[m_wayPoint], GetTransform()->position) < 10)
+	{
+		// Check to see if you are at the last point in the path
+		if (++m_wayPoint == m_patrolPath.size())
+		{
+			// if so.. reset
+			m_wayPoint = 0;
+		}
+		SetTargetPosition(m_patrolPath[m_wayPoint]);
+	}
 
-	LookWhereYoureGoing(steering_direction);
 
-	GetRigidBody()->acceleration = GetCurrentDirection() * GetAccelerationRate();
+		SetDesiredVelocity(GetTargetPosition());
+
+		const glm::vec2 steering_direction = GetDesiredVelocity() - GetCurrentDirection();
+
+		LookWhereYoureGoing(steering_direction);
+
+		GetRigidBody()->acceleration = GetCurrentDirection() * GetAccelerationRate();
 }
 
 void StarShip::LookWhereYoureGoing(const glm::vec2 target_direction)
 {
-	float target_rotation = Util::SignedAngle(GetCurrentDirection(), target_direction) - 90.0f;
+	float target_rotation = Util::SignedAngle(GetCurrentDirection(), target_direction) -90.0f;
+
+	last_rotation = target_rotation;
+
+	if (target_rotation < 0)
+	{
+		target_rotation += 180.0f;
+	}
+	if (target_rotation < 184 && target_rotation > 176)
+	{
+		target_rotation = last_rotation;
+	}
 
 	const float turn_sensitivity = 3.0f;
 
-	SetCurrentHeading(Util::LerpUnclamped(GetCurrentHeading(),
+	if(GetCollisionWhiskers()[0] || GetCollisionWhiskers()[1] || GetCollisionWhiskers()[2])
+	{
+		target_rotation += GetTurnRate() * turn_sensitivity;
+	}
+	else if(GetCollisionWhiskers()[3] || GetCollisionWhiskers()[4])
+	{
+		target_rotation -= GetTurnRate() * turn_sensitivity;
+	}
+
+	SetCurrentHeading(Util::LerpUnclamped(GetCurrentHeading(), 
 		GetCurrentHeading() + target_rotation, GetTurnRate() * Game::Instance().GetDeltaTime()));
 
+	UpdateWhiskers(GetWhiskerAngle());
+}
+
+void StarShip::Reset()
+{
+	GetTransform()->position = m_startPosition;
 }
 
 void StarShip::m_move()
 {
-	auto distance = Util::Distance(GetTransform()->position, GetTargetPosition());
-	std::cout << "distance: " << distance << "\n";
-	if (distance > 100.0f)
-	{
-		Seek();
-	}
-	else if (distance <= 5.0f)
-	{
-		GetRigidBody()->acceleration = glm::vec2(0.0f, 0.0f);
-		GetRigidBody()->velocity = glm::vec2(0.0f, 0.0f);
-	}
-	else
-	{
-		auto factor = distance / 200.0f;
-		GetRigidBody()->acceleration *= factor;
-	}
+	Seek(); // Get our target for this frame
+
+	//                      final Position  Position Term   Velocity      Acceleration Term
+	// Kinematic Equation-> Pf            = Pi +            Vi * (time) + (0.5) * Ai * (time * time)
 
 	const float dt = Game::Instance().GetDeltaTime();
 
@@ -155,5 +202,16 @@ void StarShip::m_move()
 	GetRigidBody()->velocity = Util::Clamp(GetRigidBody()->velocity, GetMaxSpeed());
 }
 
+void StarShip::m_buildPatrolPath()
+{
+	m_patrolPath.push_back(glm::vec2(760, 40)); // Top Right Corner node
 
+	m_patrolPath.push_back(glm::vec2(760, 560)); // Bottom Right Corner node
 
+	m_patrolPath.push_back(glm::vec2(40, 560)); // Bottom Left Corner node
+
+	m_patrolPath.push_back(glm::vec2(40, 40)); // Top Left Corner node
+
+	SetTargetPosition(m_patrolPath[m_wayPoint]);
+
+}
