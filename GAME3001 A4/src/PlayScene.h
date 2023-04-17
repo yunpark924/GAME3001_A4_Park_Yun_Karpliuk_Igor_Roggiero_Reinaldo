@@ -44,6 +44,7 @@ public:
 	[[nodiscard]] Player* GetTarget() const;
 	[[nodiscard]] std::vector<PathNode*> GetGrid() const;
 	[[nodiscard]] std::vector<Obstacle*> GetObstacles() const;
+	Label* m_pHealthLabel{};
 private:
 	// IMGUI Function
 	void GUI_Function();

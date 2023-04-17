@@ -43,6 +43,7 @@ CloseCombatEnemy::CloseCombatEnemy(Scene* scene)
 	SetWhiskerAngle(45.0f);
 	SetLOSColour(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)); // Default LOS Colour = Red
 	SoundManager::Instance().Load("../Assets/Audio/deathE.mp3", "deathE", SoundType::SOUND_SFX);
+	SoundManager::Instance().Load("../Assets/Audio/hurt.mp3", "hurt", SoundType::SOUND_SFX);
 	// New for Lab 7.1
 	SetActionState(ActionState::NO_ACTION);
 	buildPatrolPath();
@@ -146,17 +147,19 @@ void CloseCombatEnemy::Attack()
 	auto scene = dynamic_cast<PlayScene*>(GetScene());
 	if (GetActionState() != ActionState::ATTACK) 
 	{
-		
 		SetActionState(ActionState::ATTACK);
+		
 	}
 	if (timerUntilHit <= 0)
 	{
-		timerUntilHit = 2.5f;
+		timerUntilHit = 1.5f;
 		scene->GetTarget()->TakeDamage(10.0f);
+		SoundManager::Instance().PlaySoundFX("hurt");
 	}
 	else {
 		timerUntilHit -= Game::Instance().GetDeltaTime();
 	}
+	
 }
 
 

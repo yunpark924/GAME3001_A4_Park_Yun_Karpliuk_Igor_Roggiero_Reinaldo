@@ -65,6 +65,10 @@ void PlayScene::Draw()
 			}
 		}
 	}
+	const SDL_Color blue = { 0, 0, 0, 255 };
+	m_pHealthLabel = new Label("Health", "Wild", 40, blue, glm::vec2(100.0f, 40.0f));
+	m_pHealthLabel->SetParent(this);
+	Scene::AddChild(m_pHealthLabel);
 	SDL_SetRenderDrawColor(Renderer::Instance().GetRenderer(), 255, 255, 255, 255);
 }
 
@@ -264,6 +268,7 @@ void PlayScene::HandleEvents()
 					m_pPlayer->MeleeAttack();
 					enemy->TakeDamage(m_pPlayer->GetDamage());
 					enemy->SetIsHit(true);
+					SoundManager::Instance().PlaySoundFX("sword");
 				}
 				else
 				{
@@ -384,11 +389,10 @@ void PlayScene::Start()
 	m_pTorpedoPool = new TorpedoPool();
 	AddChild(m_pTorpedoPool, 2);
 
-	
-
 
 	// Preload Sounds
 	SoundManager::Instance().Load("../Assets/Audio/arrow.mp3", "arrow", SoundType::SOUND_SFX);
+	SoundManager::Instance().Load("../Assets/Audio/sword.mp3", "sword", SoundType::SOUND_SFX);
 	SoundManager::Instance().Load("../Assets/Audio/beam.mp3", "beam", SoundType::SOUND_SFX);
 	SoundManager::Instance().Load("../Assets/Audio/hurt.mp3", "hurt", SoundType::SOUND_SFX);
 	SoundManager::Instance().Load("../Assets/Audio/hurtE.mp3", "hurtE", SoundType::SOUND_SFX);
@@ -657,7 +661,6 @@ void PlayScene::m_buildGrid()
 			}
 		}
 
-		// if Grid is supposed to be hidden - make it so!
 		m_toggleGrid(m_isGridEnabled);
 	}
 }

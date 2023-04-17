@@ -2,6 +2,7 @@
 #ifndef __PLAYER__
 #define __PLAYER__
 
+#include "Label.h"
 #include "Obstacle.h"
 #include "PlayerAnimationState.h"
 #include "Sprite.h"
@@ -32,7 +33,6 @@ public:
 	float GetHealth() const;
 	[[nodiscard]] float GetRangeOfAttack();
 	[[nodiscard]] float GetDamage();
-
 private:
 	void BuildAnimations();
 	PlayerAnimationState m_currentAnimationState;
