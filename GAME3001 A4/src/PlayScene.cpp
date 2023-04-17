@@ -53,11 +53,13 @@ void PlayScene::Draw()
 				if (enemy->GetEnemyType() == EnemyType::CLOSE_COMBAT)
 				{
 					detected = dynamic_cast<CloseCombatEnemy*>(enemy)->GetTree()->GetPlayerDetectedNode()->GetDetected();
-					Util::DrawCircle(enemy->GetTransform()->position, dynamic_cast<CloseCombatEnemy*>(enemy)->GetMaxRange(), detected ? glm::vec4(0, 1, 0, 1) : glm::vec4(1, 0, 0, 1));
+					if(m_bDebugView)
+						Util::DrawCircle(enemy->GetTransform()->position, dynamic_cast<CloseCombatEnemy*>(enemy)->GetMaxRange(), detected ? glm::vec4(0, 1, 0, 1) : glm::vec4(1, 0, 0, 1));
 				}
 				else { // If ranged combat enemy
 					detected = dynamic_cast<RangedCombatEnemy*>(enemy)->GetTree()->GetPlayerDetectedNode()->GetDetected();
-					Util::DrawCircle(enemy->GetTransform()->position, dynamic_cast<RangedCombatEnemy*>(enemy)->GetMaxRange(), detected ? glm::vec4(0, 1, 0, 1) : glm::vec4(1, 0, 0, 1));
+					if(m_bDebugView)
+						Util::DrawCircle(enemy->GetTransform()->position, dynamic_cast<RangedCombatEnemy*>(enemy)->GetMaxRange(), detected ? glm::vec4(0, 1, 0, 1) : glm::vec4(1, 0, 0, 1));
 				}
 
 			}
@@ -343,7 +345,8 @@ void PlayScene::Start()
 	m_guiTitle = "Assignment 4";
 	TextureManager::Instance().Load("../Assets/sprites/floor.png", "floor");
 
-	Game::Instance().SetDebugMode(true);
+	m_bDebugView = false;
+	Game::Instance().SetDebugMode(m_bDebugView);
 	// Add Obstacles
 	BuildObstaclePool();
 
@@ -460,7 +463,7 @@ void PlayScene::GUI_Function()
 
 	if(ImGui::Checkbox("Toggle Debug View", &m_bDebugView))
 	{
-		
+		Game::Instance().SetDebugMode(m_bDebugView);
 	}
 
 	ImGui::Separator();
