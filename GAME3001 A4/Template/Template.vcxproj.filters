@@ -497,9 +497,6 @@
     <ClInclude Include="..\src\TorpedoFederation.h">
       <Filter>Game Objects</Filter>
     </ClInclude>
-    <ClInclude Include="EnemyT.h">
-      <Filter>Enums</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\EnemyPool.h">
       <Filter>Game Objects</Filter>
     </ClInclude>
@@ -509,7 +506,10 @@
     <ClInclude Include="..\src\EnemyAnimationState.h">
       <Filter>Enums</Filter>
     </ClInclude>
-    <ClInclude Include="Spriteholder.h">
+    <ClInclude Include="..\src\EnemyT.h">
+      <Filter>Enums</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\Spriteholder.h">
       <Filter>Navigation</Filter>
     </ClInclude>
   </ItemGroup>

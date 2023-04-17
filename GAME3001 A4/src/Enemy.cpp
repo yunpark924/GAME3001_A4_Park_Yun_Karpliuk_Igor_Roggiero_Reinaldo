@@ -1,9 +1,6 @@
 ﻿#include "Enemy.h"
-
 #include "Game.h"
 #include "Util.h"
-
-
 
 float Enemy::GetMaxSpeed() const
 {
@@ -34,7 +31,6 @@ float Enemy::GetMinRange() const
 {
     return m_minRangeDistance;
 }
-
 
 DecisionTree* Enemy::GetTree() const
 {
@@ -136,8 +132,6 @@ void Enemy::SetMovingTowardsPlayer(bool towards)
     m_movingTowardsPlayer = towards;
 }
 
-
-
 void Enemy::SetMaxSpeed(float speed)
 {
     m_maxSpeed = speed;
@@ -160,14 +154,14 @@ void Enemy::SetDesiredVelocity(glm::vec2 target_position)
 
 void Enemy::Seek()
 {
-    // Find next waypoint if within 10px of the current waypoint
-    if (!m_movingTowardsPlayer) {
+  
+    if (!m_movingTowardsPlayer)
+    {
         if (Util::Distance(m_patrolPath[m_wayPoint], GetTransform()->position) < 10)
         {
-            // Check to see if you are at the last point in the path
+          
             if (++m_wayPoint == m_patrolPath.size())
             {
-                // if so.. reset
                 m_wayPoint = 0;
             }
             SetTargetPosition(m_patrolPath[m_wayPoint]);
@@ -223,8 +217,8 @@ void Enemy::Reset()
 
 void Enemy::Patrol()
 {
-    if (GetActionState() != ActionState::PATROL) {
-        // Initialize
+    if (GetActionState() != ActionState::PATROL) 
+    {
         SetActionState(ActionState::PATROL);
     }
     auto tempnode = new PathNode();
@@ -246,9 +240,6 @@ void Enemy::MoveToLOS()
 {
     auto scene = dynamic_cast<PlayScene*>(m_pScene);
 
-    //glm::vec2 target_direction = Util::Normalize(scene->GetTarget()->GetLOSDistance() - GetTransform()->position);
-   // SetTargetPosition({ scene->GetTarget()->GetTransform()->position.x, scene->GetTarget()->GetTransform()->position.y - GetLOSDistance()});
-    //LookWhereYoureGoing(target_direction);
     m_movingTowardsPlayer = true;
     float distance = 1000.00f;
     PathNode* curNode = nullptr;
@@ -284,10 +275,10 @@ void Enemy::MoveToPlayer()
         
 
         if (GetActionState() != ActionState::MOVE_TO_PLAYER) {
-            // Initialize
+     
             SetActionState(ActionState::MOVE_TO_PLAYER);
         }
-        // TODO: setup another action to take when moving to the player.
+   
         SetTargetPosition(scene->GetTarget()->GetTransform()->position);
         m_move();
     }
@@ -302,10 +293,10 @@ void Enemy::MoveToRange()
     float distance = 1000.00f;
 
     if (GetActionState() != ActionState::MOVE_TO_RANGE) {
-        // Initialize
+   
         SetActionState(ActionState::MOVE_TO_RANGE);
     }
-    // TODO: setup another action to take when moving to the player.
+
     for (const auto node : scene->GetGrid())
     {
         float temp = Util::Distance(scene->GetTarget()->GetTransform()->position, node->GetTransform()->position);
@@ -327,7 +318,6 @@ void Enemy::MoveToRange()
             MoveToLOS();
         }
     }
-    //m_move();
 }
 
 
@@ -338,7 +328,6 @@ void Enemy::Flee()
         // Initialize
         SetActionState(ActionState::FLEE);
     }
-    // RUN AWAY!!!
     if (!m_isFleeing)
     {
         std::cout << "fleeing\n";
@@ -354,8 +343,8 @@ void Enemy::MoveToCover()
     m_movingTowardsPlayer = true;
     m_behindCover = true;
 
-    if (GetActionState() != ActionState::MOVE_TO_COVER) {
-        // Initialize
+    if (GetActionState() != ActionState::MOVE_TO_COVER) 
+    {
         SetActionState(ActionState::MOVE_TO_COVER);
     }
     
@@ -383,18 +372,17 @@ void Enemy::MoveToCover()
         }
         coverTimer = rand() % 5;
     }
-    
-   // m_move();
 }
 
 void Enemy::WaitBehindCover()
 {
     auto scene = dynamic_cast<PlayScene*>(m_pScene);
-    if (GetActionState() != ActionState::WAIT_BEHIND_COVER) {
+    if (GetActionState() != ActionState::WAIT_BEHIND_COVER) 
+    {
         // Initialize
         SetActionState(ActionState::WAIT_BEHIND_COVER);
     }
-    // TODO: setup another action to take when moving to the player.
+  
     if (m_behindCover)
     {
         if (coverTimer <= 0)
@@ -411,9 +399,7 @@ void Enemy::BuildAnimations()
 
 void Enemy::m_move()
 {
-    Seek(); // Get our target for this frame
-    //                      final Position  Position Term   Velocity      Acceleration Term
-    // Kinematic Equation-> Pf            = Pi +            Vi * (time) + (0.5) * Ai * (time * time)
+    Seek();
 
     const float dt = Game::Instance().GetDeltaTime();
 

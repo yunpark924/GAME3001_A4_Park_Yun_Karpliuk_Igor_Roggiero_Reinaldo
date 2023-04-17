@@ -9,8 +9,8 @@
 
 CloseCombatEnemy::CloseCombatEnemy(Scene* scene)
 {
-	TextureManager::Instance().LoadSpriteSheet("../Assets/sprites/Player/enemyG.txt",
-		"../Assets/sprites/Player/enemyG.png", "enemyG");
+	TextureManager::Instance().LoadSpriteSheet("../Assets/sprites/enemyG.txt",
+		"../Assets/sprites/enemyG.png", "enemyG");
 
 	SetMaxSpeed(20.0f);
 	SetTurnRate(5.0f);
