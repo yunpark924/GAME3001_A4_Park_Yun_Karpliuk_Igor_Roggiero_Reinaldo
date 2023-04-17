@@ -14,8 +14,7 @@ void EnemyPool::Update()
 			m_pEnemies[i] = nullptr;
 			m_pEnemies.erase(i + m_pEnemies.begin());
 			m_pEnemies.shrink_to_fit();
-		}
-		else
+		} else
 		{
 			m_pEnemies[i]->Update();
 		}
@@ -40,7 +39,7 @@ void EnemyPool::Clean()
 	m_pEnemies.shrink_to_fit();
 }
 
-void EnemyPool::SpawnEnemy(Enemy* enemyToSpawn, EnemyT type)
+void EnemyPool::SpawnEnemy(Enemy* enemyToSpawn, EnemyType type)
 {
 	enemyToSpawn->SetEnemyType(type);
 	m_pEnemies.push_back(enemyToSpawn);

@@ -6,15 +6,13 @@
 
 Obstacle::Obstacle()
 {
-	TextureManager::Instance().Load("../Assets/textures/nebula_cloud.png", "obstacle");
+	TextureManager::Instance().Load("../Assets/sprites/rock2.png", "obstacle");
 
 	const auto size = TextureManager::Instance().GetTextureSize("obstacle");
 	SetWidth(static_cast<int>(size.x));
 	SetHeight(static_cast<int>(size.y));
 
 	GetTransform()->position = glm::vec2(400.0f, 300.0f);
-	//GetRigidBody()->bounds = glm::vec2(GetWidth(), GetHeight());
-	//setIsCentered(true);
 
 	SetType(GameObjectType::OBSTACLE);
 	GetRigidBody()->isColliding = false;

@@ -8,11 +8,11 @@
 Player::Player() : m_currentAnimationState(PlayerAnimationState::PLAYER_IDLE_RIGHT)
 {
 	TextureManager::Instance().LoadSpriteSheet(
-		"../Assets/sprites/Player/placeholder.txt",
-		"../Assets/sprites/Player/placeholder.png",
-		"placeholder");
+		"../Assets/sprites/linkP.txt",
+		"../Assets/sprites/linkP.png",
+		"linkP");
 
-	SetSpriteSheet(TextureManager::Instance().GetSpriteSheet("placeholder"));
+	SetSpriteSheet(TextureManager::Instance().GetSpriteSheet("linkP"));
 
 	SetRangeOfAttack(50.0f);
 
@@ -24,7 +24,7 @@ Player::Player() : m_currentAnimationState(PlayerAnimationState::PLAYER_IDLE_RIG
 
 	GetTransform()->position = glm::vec2(400.0f, 300.0f);
 	GetRigidBody()->velocity = glm::vec2(0.0f, 0.0f);
-	GetRigidBody()->Damp = glm::vec2(0.90f, 0.90f);
+	GetRigidBody()->velocityDampening = glm::vec2(0.90f, 0.90f);
 	GetRigidBody()->acceleration = glm::vec2(0.0f, 0.0f);
 	GetRigidBody()->isColliding = false;
 	SetType(GameObjectType::PLAYER);
@@ -51,42 +51,41 @@ void Player::Draw()
 
 	}
 
-	// Drawing the health bar for the player based on the health count.
-	if (m_Health > 0)
-	{
-		Util::DrawFilledRect(GetTransform()->position - glm::vec2((m_Health / m_maxHealth * 100) / 2, 60.0f), m_Health / m_maxHealth * 100, 10.0f, glm::vec4(0, 1.0f, 0, 1.0f));
-	}
-	else
-	{
-		//Util::DrawFilledRect(GetTransform()->position - glm::vec2( 0, 60.0f), m_Health / m_maxHealth * 100, 10.0f, glm::vec4(0, 1.0f, 0, 1.0f)); 
-	}
+	//// Drawing the health bar for the player based on the health count.
+	//if (m_Health > 0)
+	//{
+	//	Util::DrawFilledRect(GetTransform()->position - glm::vec2((m_Health / m_maxHealth * 100) / 2, 60.0f), m_Health / m_maxHealth * 100, 10.0f, glm::vec4(0, 1.0f, 0, 1.0f));
+	//} else
+	//{
+	//	
+	//}
 
 	// draw the player according to animation state
 	switch (m_currentAnimationState)
 	{
 	case PlayerAnimationState::PLAYER_IDLE_RIGHT:
-		TextureManager::Instance().PlayAnimation("placeholder", GetAnimation("idle"),
-			GetTransform()->position, 0.12f, 0, 255, true, SDL_FLIP_HORIZONTAL);
+		TextureManager::Instance().PlayAnimation("linkP", GetAnimation("idle"),
+			GetTransform()->position, 0.12f, 0, 255, true);
 		break;
 	case PlayerAnimationState::PLAYER_IDLE_LEFT:
-		TextureManager::Instance().PlayAnimation("placeholder", GetAnimation("idle"),
+		TextureManager::Instance().PlayAnimation("linkP", GetAnimation("idle"),
 			GetTransform()->position, 0.12f, 0, 255, true);
 		break;
 	case PlayerAnimationState::PLAYER_RUN_RIGHT:
-		TextureManager::Instance().PlayAnimation("placeholder", GetAnimation("run"),
-			GetTransform()->position, 0.15f, 0, 255, true, SDL_FLIP_HORIZONTAL);
+		TextureManager::Instance().PlayAnimation("linkP", GetAnimation("run_right"),
+			GetTransform()->position, 0.85f, 0, 255, true);
 		break;
 	case PlayerAnimationState::PLAYER_RUN_LEFT:
-		TextureManager::Instance().PlayAnimation("placeholder", GetAnimation("run"),
-			GetTransform()->position, 0.15f, 0, 255, true);
+		TextureManager::Instance().PlayAnimation("linkP", GetAnimation("run"),
+			GetTransform()->position, 0.85f, 0, 255, true);
 		break;
 	case PlayerAnimationState::PLAYER_RUN_DOWN:
-		TextureManager::Instance().PlayAnimation("placeholder", GetAnimation("run_back"),
-			GetTransform()->position, 0.15f, 0, 255, true);
+		TextureManager::Instance().PlayAnimation("linkP", GetAnimation("run_back"),
+			GetTransform()->position, 0.85f, 0, 255, true);
 		break;
 	case PlayerAnimationState::PLAYER_RUN_UP:
-		TextureManager::Instance().PlayAnimation("placeholder", GetAnimation("run_front"),
-			GetTransform()->position, 0.15f, 0, 255, true);
+		TextureManager::Instance().PlayAnimation("linkP", GetAnimation("run_front"),
+			GetTransform()->position, 0.95f, 0, 255, true);
 		break;
 	default:
 		break;
@@ -96,7 +95,21 @@ void Player::Draw()
 void Player::Update()
 {
 	Move();
+	if (Util::Magnitude(GetRigidBody()->velocity) <= 10)
+	{
+		if (m_currentAnimationState != PlayerAnimationState::PLAYER_IDLE_LEFT && m_currentAnimationState != PlayerAnimationState::PLAYER_IDLE_RIGHT)
+		{
+			if (m_currentAnimationState == PlayerAnimationState::PLAYER_RUN_LEFT)
+			{
+				SetAnimationState(PlayerAnimationState::PLAYER_IDLE_LEFT);
+			}
+			else
+			{
+				SetAnimationState(PlayerAnimationState::PLAYER_IDLE_RIGHT);
+			}
+		}
 
+	}
 }
 
 void Player::Clean()
@@ -116,14 +129,12 @@ void Player::Move()
 	const glm::vec2 final_position = initial_position + velocity_term + acceleration_term;
 	GetTransform()->position = final_position;
 	GetRigidBody()->velocity += GetRigidBody()->acceleration;
-	GetRigidBody()->velocity *= GetRigidBody()->Damp;
+	GetRigidBody()->velocity *= GetRigidBody()->velocityDampening;
 }
 
 void Player::MeleeAttack()
 {
-	// Melee Animation here
-
-	std::cout << "Attack successful on enemy!\n\n";
+	std::cout << "Melee Attack successful on enemy!\n\n";
 }
 
 
@@ -171,10 +182,6 @@ void Player::BuildAnimations()
 
 	idle_animation.name = "idle";
 	idle_animation.frames.push_back(GetSpriteSheet()->GetFrame("idle1"));
-	idle_animation.frames.push_back(GetSpriteSheet()->GetFrame("idle2"));
-	idle_animation.frames.push_back(GetSpriteSheet()->GetFrame("idle3"));
-	idle_animation.frames.push_back(GetSpriteSheet()->GetFrame("idle4"));
-	idle_animation.frames.push_back(GetSpriteSheet()->GetFrame("idle5"));
 
 
 	SetAnimation(idle_animation);
@@ -185,6 +192,10 @@ void Player::BuildAnimations()
 	run_back_animation.frames.push_back(GetSpriteSheet()->GetFrame("run_back1"));
 	run_back_animation.frames.push_back(GetSpriteSheet()->GetFrame("run_back2"));
 	run_back_animation.frames.push_back(GetSpriteSheet()->GetFrame("run_back3"));
+	run_back_animation.frames.push_back(GetSpriteSheet()->GetFrame("run_back4"));
+	run_back_animation.frames.push_back(GetSpriteSheet()->GetFrame("run_back5"));
+	run_back_animation.frames.push_back(GetSpriteSheet()->GetFrame("run_back6"));
+	run_back_animation.frames.push_back(GetSpriteSheet()->GetFrame("run_back7"));
 
 	SetAnimation(run_back_animation);
 
@@ -194,8 +205,25 @@ void Player::BuildAnimations()
 	run_animation.frames.push_back(GetSpriteSheet()->GetFrame("run1"));
 	run_animation.frames.push_back(GetSpriteSheet()->GetFrame("run2"));
 	run_animation.frames.push_back(GetSpriteSheet()->GetFrame("run3"));
+	run_animation.frames.push_back(GetSpriteSheet()->GetFrame("run4"));
+	run_animation.frames.push_back(GetSpriteSheet()->GetFrame("run5"));
+	run_animation.frames.push_back(GetSpriteSheet()->GetFrame("run6"));
+	run_animation.frames.push_back(GetSpriteSheet()->GetFrame("run7"));
 
 	SetAnimation(run_animation);
+
+	auto run_righta_nimation = Animation();
+
+	run_righta_nimation.name = "run_right";
+	run_righta_nimation.frames.push_back(GetSpriteSheet()->GetFrame("run_right1"));
+	run_righta_nimation.frames.push_back(GetSpriteSheet()->GetFrame("run_right2"));
+	run_righta_nimation.frames.push_back(GetSpriteSheet()->GetFrame("run_right3"));
+	run_righta_nimation.frames.push_back(GetSpriteSheet()->GetFrame("run_right4"));
+	run_righta_nimation.frames.push_back(GetSpriteSheet()->GetFrame("run_right5"));
+	run_righta_nimation.frames.push_back(GetSpriteSheet()->GetFrame("run_right6"));
+	run_righta_nimation.frames.push_back(GetSpriteSheet()->GetFrame("run_right7"));
+
+	SetAnimation(run_righta_nimation);
 
 	auto run_front_animation = Animation();
 
@@ -203,6 +231,11 @@ void Player::BuildAnimations()
 	run_front_animation.frames.push_back(GetSpriteSheet()->GetFrame("run_front1"));
 	run_front_animation.frames.push_back(GetSpriteSheet()->GetFrame("run_front2"));
 	run_front_animation.frames.push_back(GetSpriteSheet()->GetFrame("run_front3"));
+	run_front_animation.frames.push_back(GetSpriteSheet()->GetFrame("run_front4"));
+	run_front_animation.frames.push_back(GetSpriteSheet()->GetFrame("run_front5"));
+	run_front_animation.frames.push_back(GetSpriteSheet()->GetFrame("run_front6"));
+	run_front_animation.frames.push_back(GetSpriteSheet()->GetFrame("run_front7"));
+	run_front_animation.frames.push_back(GetSpriteSheet()->GetFrame("run_front8"));
 
 	SetAnimation(run_front_animation);
 }

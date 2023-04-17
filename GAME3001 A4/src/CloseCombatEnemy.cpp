@@ -1,4 +1,5 @@
 #include "CloseCombatEnemy.h"
+
 #include "Game.h"
 #include "TextureManager.h"
 #include "Util.h"
@@ -9,21 +10,21 @@
 
 CloseCombatEnemy::CloseCombatEnemy(Scene* scene)
 {
-	TextureManager::Instance().LoadSpriteSheet("../Assets/sprites/enemyG.txt",
-		"../Assets/sprites/enemyG.png", "enemyG");
+	TextureManager::Instance().LoadSpriteSheet("../Assets/sprites/skelly.txt",
+		"../Assets/sprites/skelly.png", "skelly");
 
 	SetMaxSpeed(20.0f);
 	SetTurnRate(5.0f);
 	SetAccelerationRate(2.0f);
 	SetStartPos(glm::vec2(300.0f, 500.0f));
 	SetScene(scene);
-	SetSprite(new Spriteholder);
+	SetSprite(new PlaceholderSprite);
 
 	SetHealth(100);
 
-	GetSprite()->SetSpriteSheet(TextureManager::Instance().GetSpriteSheet("enemyG"));
+	GetSprite()->SetSpriteSheet(TextureManager::Instance().GetSpriteSheet("skelly"));
 
-	const auto size = TextureManager::Instance().GetTextureSize("enemyG");
+	const auto size = TextureManager::Instance().GetTextureSize("skelly");
 	SetWidth(static_cast<int>(size.x));
 	SetHeight(static_cast<int>(size.y));
 	GetTransform()->position = glm::vec2(0.0f, 0.0f);
@@ -36,7 +37,7 @@ CloseCombatEnemy::CloseCombatEnemy(Scene* scene)
 
 	SetMaxRange(100.0f);
 	SetMinRange(5.0f);
-
+	
 	SetCurrentHeading(0.0f); // Current facing angle
 	SetLOSDistance(400.0f);
 	SetWhiskerAngle(45.0f);
@@ -59,48 +60,38 @@ CloseCombatEnemy::~CloseCombatEnemy()
 void CloseCombatEnemy::Draw()
 {
 	std::string current_anim = "";
-	// Draw the enemy based on the animation state.
+
 	switch (GetAnimationState())
 	{
 	case EnemyAnimationState::ENEMY_IDLE_LEFT:
 		current_anim = "idle";
-		TextureManager::Instance().PlayAnimation("enemyG", GetSprite()->GetAnimation(current_anim),
+		TextureManager::Instance().PlayAnimation("skelly", GetSprite()->GetAnimation(current_anim),
 			GetTransform()->position, 0.12f, static_cast<double>(GetCurrentHeading()), 255, true);
 
 		break;
 	case EnemyAnimationState::ENEMY_IDLE_RIGHT:
 		current_anim = "idle";
-		TextureManager::Instance().PlayAnimation("enemyG", GetSprite()->GetAnimation(current_anim),
+		TextureManager::Instance().PlayAnimation("skelly", GetSprite()->GetAnimation(current_anim),
 			GetTransform()->position, 0.12f, static_cast<double>(GetCurrentHeading()), 255, true, SDL_FLIP_VERTICAL);
 		break;
 	case EnemyAnimationState::ENEMY_RUN_LEFT:
 		current_anim = "run";
-		TextureManager::Instance().PlayAnimation("enemyG", GetSprite()->GetAnimation(current_anim),
-			GetTransform()->position, 0.12f, static_cast<double>(GetCurrentHeading()), 255, true);
+		TextureManager::Instance().PlayAnimation("skelly", GetSprite()->GetAnimation(current_anim),
+			GetTransform()->position, 0.20, static_cast<double>(GetCurrentHeading()), 255, true);
 		break;
 	case EnemyAnimationState::ENEMY_RUN_RIGHT:
 		current_anim = "run";
-		TextureManager::Instance().PlayAnimation("enemyG", GetSprite()->GetAnimation(current_anim),
-			GetTransform()->position, 0.12f, static_cast<double>(GetCurrentHeading()), 255, true, SDL_FLIP_VERTICAL);
+		TextureManager::Instance().PlayAnimation("skelly", GetSprite()->GetAnimation(current_anim),
+			GetTransform()->position, 0.20, static_cast<double>(GetCurrentHeading()), 255, true, SDL_FLIP_VERTICAL);
 		break;
 	case EnemyAnimationState::ENEMY_RUN_DOWN:
-		current_anim = "run_down";
-		TextureManager::Instance().PlayAnimation("enemyG", GetSprite()->GetAnimation(current_anim),
+		current_anim = "run";
+		TextureManager::Instance().PlayAnimation("skelly", GetSprite()->GetAnimation(current_anim),
 			GetTransform()->position, 0.12f, static_cast<double>(GetCurrentHeading()), 255, true);
 		break;
 	case EnemyAnimationState::ENEMY_RUN_UP:
-		current_anim = "run_up";
-		TextureManager::Instance().PlayAnimation("enemyG", GetSprite()->GetAnimation(current_anim),
-			GetTransform()->position, 0.12f, static_cast<double>(GetCurrentHeading()), 255, true);
-		break;
-	case EnemyAnimationState::ENEMY_DAMAGE:
-		current_anim = "damaged";
-		TextureManager::Instance().PlayAnimation("enemyG", GetSprite()->GetAnimation(current_anim),
-			GetTransform()->position, 0.12f, static_cast<double>(GetCurrentHeading()), 255, true);
-		break;
-	case EnemyAnimationState::ENEMY_DEAD:
-		current_anim = "death";
-		TextureManager::Instance().PlayAnimation("enemyG", GetSprite()->GetAnimation(current_anim),
+		current_anim = "run";
+		TextureManager::Instance().PlayAnimation("skelly", GetSprite()->GetAnimation(current_anim),
 			GetTransform()->position, 0.12f, static_cast<double>(GetCurrentHeading()), 255, true);
 		break;
 	}
@@ -108,19 +99,24 @@ void CloseCombatEnemy::Draw()
 	SetWidth(GetSprite()->GetAnimation(current_anim).frames[0].w);
 	SetHeight(GetSprite()->GetAnimation(current_anim).frames[0].h);
 
+	// Draw the health based on the amount the enemy has
 	if (GetHealth() > 0)
 	{
 		Util::DrawFilledRect(GetTransform()->position - glm::vec2((GetHealth() / GetMaxHealth() * 100) / 2, 60.0f), GetHealth() / GetMaxHealth() * 100.0f, 10.0f, glm::vec4(0, 1.0f, 0, 1.0f));
 	}
 	else
 	{
+		
 	}
 
-	if (EventManager::Instance().IsIMGUIActive())
+	if (EventManager::Instance().IsIMGUIActive()) 
 	{
+		// draw the LOS Line
 		Util::DrawLine(GetTransform()->position + GetCurrentDirection() * 0.5f * static_cast<float>(GetWidth()),
 			GetMiddleLOSEndPoint(), GetLOSColour());
 	}
+
+	// If we are in debug mode, draw the collider rect.
 	if (Game::Instance().GetDebugMode())
 	{
 		Util::DrawRect(GetTransform()->position -
@@ -131,16 +127,7 @@ void CloseCombatEnemy::Draw()
 
 void CloseCombatEnemy::Update()
 {
-	// Determine which action to perform
 	GetTree()->MakeDecision();
-	if (GetTree()->GetEnemyHitNode()->GetHit())
-	{
-		SetAnimationState(EnemyAnimationState::ENEMY_DAMAGE);
-	}
-	if (GetHealth() <= 0)
-	{
-		SetAnimationState(EnemyAnimationState::ENEMY_DEAD);
-	}
 }
 
 void CloseCombatEnemy::Clean()
@@ -168,15 +155,11 @@ void CloseCombatEnemy::Attack()
 
 void CloseCombatEnemy::m_buildTree()
 {
-	// Create and add the root node - Health Condition
+	
 	GetTree()->SetEnemyHealthNode(new EnemyHealthCondition(this, true));
 
 	GetTree()->GetTree().push_back(GetTree()->GetEnemyHealthNode());
 
-
-	//Conditions
-
-	// Left Subtree Level 1 -> Flee Action
 	TreeNode* fleeNode = GetTree()->AddNode(GetTree()->GetEnemyHealthNode(), new FleeAction(this), TreeNodeType::LEFT_TREE_NODE);
 	GetTree()->GetTree().push_back(fleeNode);
 
@@ -223,12 +206,10 @@ void CloseCombatEnemy::m_buildTree()
 
 	// Left Left Subtree Level 5 -> Move to Player Action
 	TreeNode* moveToPlayer = GetTree()->AddNode(GetTree()->GetCloseCombatNode(), new MoveToPlayerAction(this), TreeNodeType::LEFT_TREE_NODE);
-	//dynamic_cast<ActionNode*>(moveToRangeNode)->SetAgent(this);
 	GetTree()->GetTree().push_back(moveToPlayer);
 
 	// Left Right Subtree Level 5 -> Attack Action
 	TreeNode* attackNode = GetTree()->AddNode(GetTree()->GetCloseCombatNode(), new AttackAction(this), TreeNodeType::RIGHT_TREE_NODE);
-	//dynamic_cast<ActionNode*>(attackNode)->SetAgent(this);
 	GetTree()->GetTree().push_back(attackNode);
 }
 
@@ -247,36 +228,8 @@ void CloseCombatEnemy::BuildAnimations()
 	run_animation.name = "run";
 	run_animation.frames.push_back(GetSprite()->GetSpriteSheet()->GetFrame("run1"));
 	run_animation.frames.push_back(GetSprite()->GetSpriteSheet()->GetFrame("run2"));
+	run_animation.frames.push_back(GetSprite()->GetSpriteSheet()->GetFrame("run3"));
 
 	GetSprite()->SetAnimation(run_animation);
 
-	Animation run_back_animation = Animation();
-
-	run_back_animation.name = "run_down";
-	run_back_animation.frames.push_back(GetSprite()->GetSpriteSheet()->GetFrame("run_down1"));
-	run_back_animation.frames.push_back(GetSprite()->GetSpriteSheet()->GetFrame("run_down2"));
-
-	GetSprite()->SetAnimation(run_back_animation);
-
-	Animation run_front_animation = Animation();
-
-	run_front_animation.name = "run_up";
-	run_front_animation.frames.push_back(GetSprite()->GetSpriteSheet()->GetFrame("run_up1"));
-	run_front_animation.frames.push_back(GetSprite()->GetSpriteSheet()->GetFrame("run_up2"));
-
-	GetSprite()->SetAnimation(run_front_animation);
-
-	Animation death_animation = Animation();
-
-	death_animation.name = "death";
-	death_animation.frames.push_back(GetSprite()->GetSpriteSheet()->GetFrame("death"));
-
-	GetSprite()->SetAnimation(death_animation);
-
-	Animation damage_animation = Animation();
-
-	damage_animation.name = "damaged";
-	damage_animation.frames.push_back(GetSprite()->GetSpriteSheet()->GetFrame("damaged"));
-
-	GetSprite()->SetAnimation(damage_animation);
 }

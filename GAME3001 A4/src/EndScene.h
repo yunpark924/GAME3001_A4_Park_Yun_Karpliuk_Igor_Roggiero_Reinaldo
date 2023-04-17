@@ -23,7 +23,7 @@ private:
 	Label* m_label{};
 
 	Button* m_pRestartButton{};
-	bool m_winstatus;
+	bool m_wincondition;
 };
 
 #endif /* defined (__END_SCENE__) */

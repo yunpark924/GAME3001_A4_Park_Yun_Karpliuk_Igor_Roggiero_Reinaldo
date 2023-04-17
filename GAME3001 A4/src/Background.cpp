@@ -4,7 +4,7 @@
 
 Background::Background()
 {
-	TextureManager::Instance().Load("../Assets/sprites/background/background.png", "background");
+	TextureManager::Instance().Load("../Assets/sprites/floor.png", "background");
 
 	const auto size = TextureManager::Instance().GetTextureSize("background");
 	SetWidth(size.x);

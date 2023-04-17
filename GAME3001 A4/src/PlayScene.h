@@ -6,21 +6,23 @@
 #include "Obstacle.h"
 #include "Scene.h"
 #include "Target.h"
-#include "StarShip.h"
 #include "PathNode.h"
+#include "Label.h"
+#include "Player.h"
 
 // New for Lab 7.1
 #include "Background.h"
 
 // New for Lab 7.2
 #include "CloseCombatEnemy.h"
-#include "EnemyPool.h"
-#include "Label.h"
-#include "Player.h"
 #include "RangedCombatEnemy.h"
 #include "Torpedo.h"
 #include "TorpedoKlingon.h"
 #include "TorpedoFederation.h"
+
+
+// New for Assignment 4
+#include "EnemyPool.h"
 
 //#define CLOSE_COMBAT
 
@@ -38,9 +40,9 @@ public:
 	virtual void Start() override;
 
 	// New for Lab 8.
-	void SpawnEnemyTorpedo();
-	[[nodiscard]] Target* GetTarget() const;
-	[[nodiscard]] std::vector<PathNode*> GetGrid();
+	void SpawnEnemyTorpedo(Agent* enemyShooting);
+	[[nodiscard]] Player* GetTarget() const;
+	[[nodiscard]] std::vector<PathNode*> GetGrid() const;
 	[[nodiscard]] std::vector<Obstacle*> GetObstacles() const;
 private:
 	// IMGUI Function
@@ -59,7 +61,7 @@ private:
 	std::vector<Obstacle*> m_pObstacles;
 	// New for Lab 7.1
 	Background* m_pBackground;
-
+	
 	float starShipRadius = 300.0f;
 	void BuildObstaclePool();
 

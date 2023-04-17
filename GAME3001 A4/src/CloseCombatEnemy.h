@@ -10,7 +10,7 @@
 #include "MoveToCoverAction.h"
 #include "FleeAction.h"
 #include "Sprite.h"
-#include "Spriteholder.h"
+#include "PlaceholderSprite.h"
 
 class CloseCombatEnemy : public Enemy
 {
@@ -33,6 +33,8 @@ private:
 	void m_buildTree() override;
 	float timerUntilHit;
 };
+
+
 
 #endif /* defined (__CLOSE_COMBAT_ENEMY_H__)*/
 

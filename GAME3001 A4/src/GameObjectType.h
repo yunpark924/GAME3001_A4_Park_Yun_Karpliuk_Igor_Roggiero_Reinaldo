@@ -7,6 +7,7 @@ enum class GameObjectType {
 	PATH_NODE,
 	SPACE_SHIP,
 	OBSTACLE,
+	DESTRUCT_OBSTACLE,
 	SHIP,
 	TARGET,
 	PLAYER,
@@ -16,6 +17,7 @@ enum class GameObjectType {
 	BACK_BUTTON,
 	NEXT_BUTTON,
 	PROJECTILE,
+	TORPEDO,
 	NUM_OF_TYPES
 };
 #endif /* defined (__GAME_OBJECT_TYPE__) */

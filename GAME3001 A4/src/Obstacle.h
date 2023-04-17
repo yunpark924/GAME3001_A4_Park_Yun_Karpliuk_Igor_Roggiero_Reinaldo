@@ -3,7 +3,7 @@
 #define __OBSTACLE__
 #include "NavigationObject.h"
 
-class Obstacle final : public DisplayObject
+class Obstacle : public DisplayObject
 {
 public:
 	// constructors
@@ -16,7 +16,8 @@ public:
 	void Draw() override;
 	void Update() override;
 	void Clean() override;
-	bool GetDeleteMe() const;
+
+	[[nodiscard]] bool GetDeleteMe() const;
 	void SetDeleteMe(bool deleteMe);
 private:
 	bool m_deleteMe;

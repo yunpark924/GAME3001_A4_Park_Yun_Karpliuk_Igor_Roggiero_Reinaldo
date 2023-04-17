@@ -123,9 +123,6 @@
     <ClCompile Include="..\src\Sprite.cpp">
       <Filter>Core</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Plane.cpp">
-      <Filter>Game Objects</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\ImGuiWindowFrame.cpp">
       <Filter>Singletons</Filter>
     </ClCompile>
@@ -158,9 +155,6 @@
     </ClCompile>
     <ClCompile Include="..\src\PathNode.cpp">
       <Filter>Navigation</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\StarShip.cpp">
-      <Filter>Decision\Agents</Filter>
     </ClCompile>
     <ClCompile Include="..\src\Agent.cpp">
       <Filter>Decision\Core</Filter>
@@ -234,9 +228,8 @@
     <ClCompile Include="..\src\EnemyPool.cpp">
       <Filter>Game Objects</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\Enemy.cpp">
-      <Filter>Game Objects</Filter>
-    </ClCompile>
+    <ClCompile Include="..\src\DestructibleObstacle.cpp" />
+    <ClCompile Include="..\src\Enemy.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\StartScene.h">
@@ -344,9 +337,6 @@
     <ClInclude Include="..\src\Sprite.h">
       <Filter>Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Plane.h">
-      <Filter>Game Objects</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\SoundType.h">
       <Filter>Enums</Filter>
     </ClInclude>
@@ -415,9 +405,6 @@
     </ClInclude>
     <ClInclude Include="..\src\TreeNode.h">
       <Filter>Decision\Core</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\StarShip.h">
-      <Filter>Decision\Agents</Filter>
     </ClInclude>
     <ClInclude Include="..\src\Agent.h">
       <Filter>Decision\Core</Filter>
@@ -500,18 +487,17 @@
     <ClInclude Include="..\src\EnemyPool.h">
       <Filter>Game Objects</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Enemy.h">
-      <Filter>Game Objects</Filter>
+    <ClInclude Include="..\src\EnemyTypes.h">
+      <Filter>Enums</Filter>
     </ClInclude>
     <ClInclude Include="..\src\EnemyAnimationState.h">
       <Filter>Enums</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\EnemyT.h">
-      <Filter>Enums</Filter>
+    <ClInclude Include="..\src\PlaceholderSprite.h">
+      <Filter>Game Objects</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\Spriteholder.h">
-      <Filter>Navigation</Filter>
-    </ClInclude>
+    <ClInclude Include="..\src\DestructibleObstacle.h" />
+    <ClInclude Include="..\src\Enemy.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md">

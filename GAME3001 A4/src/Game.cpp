@@ -6,6 +6,9 @@
 #include "Renderer.h"
 #include "EventManager.h"
 
+
+// Game functions - DO NOT REMOVE ***********************************************
+
 Game::Game() :
 	m_bRunning(true), m_frames(0), m_pCurrentScene(nullptr), m_currentSceneState(SceneState::NO_SCENE), m_pWindow(nullptr)
 {
@@ -85,7 +88,7 @@ bool Game::Init(const char* title, const int x, const int y, const int width, co
 	}
 
 	std::cout << "init success" << std::endl;
-	m_bRunning = true;
+	m_bRunning = true; // everything initialized successfully - start the main loop
 
 	return true;
 }
@@ -94,7 +97,7 @@ void Game::Start()
 {
 	m_currentSceneState = SceneState::NO_SCENE;
 
-	ChangeSceneState(SceneState::PLAY);
+	ChangeSceneState(SceneState::START);
 }
 
 bool Game::IsRunning() const
@@ -173,7 +176,7 @@ void Game::ChangeSceneState(const SceneState new_state)
 		default:
 			std::cout << "default case activated" << std::endl;
 			break;
-
+		
 		}
 	}
 
@@ -219,7 +222,11 @@ void Game::Clean() const
 {
 	std::cout << "cleaning game" << std::endl;
 
+	// Clean Up for IMGUI
+	//ImGui::DestroyContext();
 	ImGuiWindowFrame::Instance().Clean();
+
+	//TTF_Quit();
 
 	SDL_Quit();
 }

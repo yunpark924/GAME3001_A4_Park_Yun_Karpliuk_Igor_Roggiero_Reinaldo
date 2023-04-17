@@ -1,44 +1,28 @@
 #include "TorpedoFederation.h"
 
-TorpedoFederation::TorpedoFederation(float speed, glm::vec2 direction)
+TorpedoFederation::TorpedoFederation(float speed, glm::vec2 direction, float damage)
 {
-	TextureManager::Instance().LoadSpriteSheet(
-		"../Assets/sprites/torpedo.txt",
-		"../Assets/sprites/torpedo_k.png",
-		"torpedo");
-	m_textureKey = "torpedo";
+	TextureManager::Instance().Load("../Assets/sprites/arrow.png", "arrow");
+	TextureManager::Instance().Load("../Assets/textures/Explosion.png", "explosion");
+
+	m_textureKey = "arrow";
 	SetSpriteSheet(TextureManager::Instance().GetSpriteSheet(m_textureKey));
-
-	// set frame width
-	SetWidth(64);
-
-	// set frame height
-	SetHeight(64);
-
-	GetTransform()->position = glm::vec2(400.0f, 300.0f);
-	GetRigidBody()->velocity = glm::vec2(0.0f, 0.0f);
-	GetRigidBody()->acceleration = glm::vec2(0.0f, 0.0f);
-	GetRigidBody()->isColliding = false;
-	SetType(GameObjectType::PROJECTILE);
+	SetDamage(damage);
+	SetWidth(20);
+	SetHeight(20);
 
 	m_direction = { direction.x * speed, direction.y * speed };
 
-	BuildAnimations();
 }
 
-void TorpedoFederation::BuildAnimations()
+void TorpedoFederation::Draw()
 {
-	auto fire_animation = Animation();
-
-	fire_animation.name = "fire";
-	fire_animation.frames.push_back(GetSpriteSheet()->GetFrame("fired1"));
-	fire_animation.frames.push_back(GetSpriteSheet()->GetFrame("fired2"));
-	fire_animation.frames.push_back(GetSpriteSheet()->GetFrame("fired3"));
-	fire_animation.frames.push_back(GetSpriteSheet()->GetFrame("fired4"));
-	fire_animation.frames.push_back(GetSpriteSheet()->GetFrame("fired5"));
-	fire_animation.frames.push_back(GetSpriteSheet()->GetFrame("fired6"));
-	fire_animation.frames.push_back(GetSpriteSheet()->GetFrame("fired7"));
-	fire_animation.frames.push_back(GetSpriteSheet()->GetFrame("fired8"));
-
-	SetAnimation(fire_animation);
+	// If we are in debug mode, draw the collider rect.
+	if (Game::Instance().GetDebugMode())
+	{
+		Util::DrawRect(GetTransform()->position -
+			glm::vec2(this->GetWidth() * 0.5f, this->GetHeight() * 0.5f),
+			this->GetWidth(), this->GetHeight());
+	}
+	TextureManager::Instance().Draw("arrow", GetTransform()->position, atan2(m_direction.y,m_direction.x)*Util::Rad2Deg, 255, true, SDL_FLIP_HORIZONTAL);
 }

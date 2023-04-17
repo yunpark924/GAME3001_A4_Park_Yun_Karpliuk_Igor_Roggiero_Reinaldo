@@ -4,7 +4,7 @@
 #include "glm/gtx/string_cast.hpp"
 #include "EventManager.h"
 
-EndScene::EndScene(bool win) :m_winstatus(win)
+EndScene::EndScene(bool win) :m_wincondition(win)
 {
 	EndScene::Start();
 }
@@ -25,6 +25,8 @@ void EndScene::Update()
 void EndScene::Clean()
 {
 	RemoveAllChildren();
+	SoundManager::Instance().Unload("GameOver", SoundType::SOUND_MUSIC);
+	SoundManager::Instance().Unload("Victory", SoundType::SOUND_MUSIC);
 }
 
 void EndScene::HandleEvents()
@@ -49,28 +51,48 @@ void EndScene::HandleEvents()
 void EndScene::Start()
 {
 	const SDL_Color blue = { 0, 0, 255, 255 };
-	m_label = (m_winstatus) ? new  Label("You saved Hyrule!", "Dock51", 80, blue, glm::vec2(400.0f, 40.0f)) : new  Label("Hyrule Falls", "Dock51", 80, blue, glm::vec2(400.0f, 40.0f));
+	m_label = (m_wincondition) ? new  Label("Hyrule is saved!", "Dock51", 80, blue, glm::vec2(400.0f, 40.0f)) : new  Label("Hyrule has Fallen.", "Consolas", 80, blue, glm::vec2(400.0f, 40.0f));
 	m_label->SetParent(this);
 	AddChild(m_label);
 
+	if (!m_wincondition)
+	{
+		// Preload music
+		SoundManager::Instance().Load("../Assets/Audio/GameOver.mp3", "GameOver", SoundType::SOUND_MUSIC);
+		SoundManager::Instance().SetMusicVolume(20);
+
+		// Play Music
+		SoundManager::Instance().PlayMusic("GameOver");
+	}
+
+	else
+	{
+		// Preload music
+		SoundManager::Instance().Load("../Assets/Audio/Victory.mp3", "Victory", SoundType::SOUND_MUSIC);
+		SoundManager::Instance().SetMusicVolume(20);
+
+		// Play Music
+		SoundManager::Instance().PlayMusic("Victory");
+	}
+	
 	// Restart Button
 	m_pRestartButton = new Button("../Assets/textures/restartButton.png", "restartButton", GameObjectType::RESTART_BUTTON);
 	m_pRestartButton->GetTransform()->position = glm::vec2(400.0f, 400.0f);
 	m_pRestartButton->AddEventListener(Event::CLICK, [&]()-> void
-		{
-			m_pRestartButton->SetActive(false);
-			Game::Instance().ChangeSceneState(SceneState::PLAY);
-		});
+	{
+		m_pRestartButton->SetActive(false);
+		Game::Instance().ChangeSceneState(SceneState::PLAY);
+	});
 
 	m_pRestartButton->AddEventListener(Event::MOUSE_OVER, [&]()->void
-		{
-			m_pRestartButton->SetAlpha(128);
-		});
+	{
+		m_pRestartButton->SetAlpha(128);
+	});
 
 	m_pRestartButton->AddEventListener(Event::MOUSE_OUT, [&]()->void
-		{
-			m_pRestartButton->SetAlpha(255);
-		});
+	{
+		m_pRestartButton->SetAlpha(255);
+	});
 
 	AddChild(m_pRestartButton);
 

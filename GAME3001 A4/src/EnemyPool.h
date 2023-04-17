@@ -6,7 +6,7 @@
 
 #include "DisplayObject.h"
 #include "Agent.h"
-#include "EnemyT.h"
+#include "EnemyTypes.h"
 
 #include "CloseCombatEnemy.h"
 #include "RangedCombatEnemy.h"
@@ -23,7 +23,7 @@ public:
 	void Clean() override;
 
 	// Spawn in enemy
-	void SpawnEnemy(Enemy* enemyToSpawn, EnemyT type);
+	void SpawnEnemy(Enemy* enemyToSpawn, EnemyType type);
 
 	// Getter for vector of enemies
 	std::vector<Enemy*> GetPool();

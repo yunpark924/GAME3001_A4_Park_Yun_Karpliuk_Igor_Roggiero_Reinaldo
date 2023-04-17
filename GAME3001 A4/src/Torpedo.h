@@ -26,8 +26,8 @@ public:
 
 	// setters
 	virtual void SetAnimationState(TorpedoAnimationState new_state);
-	void SetDamage(float damage) { m_damage = damage; }
-	float GetDamage() { return m_damage; }
+	void SetDamage(float damage){m_damage=damage;}
+	float GetDamage(){return m_damage;}
 
 	bool GetDeleteMe();
 	void SetDeleteMe(bool temp);

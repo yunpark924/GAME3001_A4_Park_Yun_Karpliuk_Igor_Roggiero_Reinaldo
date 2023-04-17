@@ -1,7 +1,7 @@
 #include "TorpedoKlingon.h"
 #include "TextureManager.h"
 
-TorpedoKlingon::TorpedoKlingon(float speed = 0.0f, glm::vec2 direction = { 0.0, 0.0 })
+TorpedoKlingon::TorpedoKlingon(float speed = 0.0f, glm::vec2 direction = { 0.0, 0.0 }, float damage)
 {
 	// Variable initialization.
 	m_currentAnimationState = TorpedoAnimationState::FIRED;
@@ -11,13 +11,13 @@ TorpedoKlingon::TorpedoKlingon(float speed = 0.0f, glm::vec2 direction = { 0.0, 
 
 
 	TextureManager::Instance().LoadSpriteSheet(
-		"../Assets/sprites/torpedo.txt",
-		"../Assets/sprites/torpedo_k.png", 
+		"../Assets/sprites/beam.txt",
+		"../Assets/sprites/beam.png", 
 		m_textureKey);
 
 
 	SetSpriteSheet(TextureManager::Instance().GetSpriteSheet(m_textureKey));
-	
+	SetDamage(damage);
 	// set frame width
 	SetWidth(64);
 
@@ -34,21 +34,6 @@ TorpedoKlingon::TorpedoKlingon(float speed = 0.0f, glm::vec2 direction = { 0.0, 
 	
 	BuildAnimations();
 }
-
-
-//void TorpedoKlingon::Draw()
-//{
-//	 draw the TorpedoKlingon according to animation state
-//	switch (m_currentAnimationState)
-//	{
-//	case TorpedoAnimationState::FIRED:
-//		TextureManager::Instance().PlayAnimation("TorpedoKlingon", GetAnimation("fire"),
-//			GetTransform()->position, 0.25f, 0, 255, true);
-//		break;
-//	default:
-//		break;
-//	}
-//}
 
 void TorpedoKlingon::BuildAnimations()
 {

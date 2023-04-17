@@ -170,6 +170,7 @@
     <ClCompile Include="..\src\CloseCombatEnemy.cpp" />
     <ClCompile Include="..\src\CollisionManager.cpp" />
     <ClCompile Include="..\src\DecisionTree.cpp" />
+    <ClCompile Include="..\src\DestructibleObstacle.cpp" />
     <ClCompile Include="..\src\Enemy.cpp" />
     <ClCompile Include="..\src\EnemyHealthCondition.cpp" />
     <ClCompile Include="..\src\EnemyHitCondition.cpp" />
@@ -190,7 +191,6 @@
     <ClCompile Include="..\src\RangedCombatCondition.cpp" />
     <ClCompile Include="..\src\RangedCombatEnemy.cpp" />
     <ClCompile Include="..\src\Sprite.cpp" />
-    <ClCompile Include="..\src\StarShip.cpp" />
     <ClCompile Include="..\src\Tile.cpp" />
     <ClCompile Include="..\src\Torpedo.cpp" />
     <ClCompile Include="..\src\TorpedoFederation.cpp" />
@@ -205,7 +205,6 @@
     <ClCompile Include="..\src\Label.cpp" />
     <ClCompile Include="..\src\PlayScene.cpp" />
     <ClCompile Include="..\src\main.cpp" />
-    <ClCompile Include="..\src\Plane.cpp" />
     <ClCompile Include="..\src\Player.cpp" />
     <ClCompile Include="..\src\Renderer.cpp" />
     <ClCompile Include="..\src\Scene.cpp" />
@@ -241,12 +240,13 @@
     <ClInclude Include="..\src\ConditionNode.h" />
     <ClInclude Include="..\src\Config.h" />
     <ClInclude Include="..\src\DecisionTree.h" />
+    <ClInclude Include="..\src\DestructibleObstacle.h" />
     <ClInclude Include="..\src\Enemy.h" />
     <ClInclude Include="..\src\EnemyAnimationState.h" />
     <ClInclude Include="..\src\EnemyHealthCondition.h" />
     <ClInclude Include="..\src\EnemyHitCondition.h" />
     <ClInclude Include="..\src\EnemyPool.h" />
-    <ClInclude Include="..\src\EnemyT.h" />
+    <ClInclude Include="..\src\EnemyTypes.h" />
     <ClInclude Include="..\src\FleeAction.h" />
     <ClInclude Include="..\src\Heuristic.h" />
     <ClInclude Include="..\src\ImGuiWindowFrame.h" />
@@ -262,14 +262,13 @@
     <ClInclude Include="..\src\Obstacle.h" />
     <ClInclude Include="..\src\PathNode.h" />
     <ClInclude Include="..\src\PatrolAction.h" />
+    <ClInclude Include="..\src\PlaceholderSprite.h" />
     <ClInclude Include="..\src\PlayerDetectedCondition.h" />
     <ClInclude Include="..\src\RadiusCondition.h" />
     <ClInclude Include="..\src\RangedCombatCondition.h" />
     <ClInclude Include="..\src\RangedCombatEnemy.h" />
     <ClInclude Include="..\src\SoundType.h" />
     <ClInclude Include="..\src\Sprite.h" />
-    <ClInclude Include="..\src\Spriteholder.h" />
-    <ClInclude Include="..\src\StarShip.h" />
     <ClInclude Include="..\src\Tile.h" />
     <ClInclude Include="..\src\TileComparator.h" />
     <ClInclude Include="..\src\TileStatus.h" />
@@ -293,7 +292,6 @@
     <ClInclude Include="..\src\Label.h" />
     <ClInclude Include="..\src\MouseButtons.h" />
     <ClInclude Include="..\src\PlayScene.h" />
-    <ClInclude Include="..\src\Plane.h" />
     <ClInclude Include="..\src\Player.h" />
     <ClInclude Include="..\src\PlayerAnimationState.h" />
     <ClInclude Include="..\src\Renderer.h" />

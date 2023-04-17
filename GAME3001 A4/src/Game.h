@@ -63,7 +63,7 @@ public:
 private:
 	Game();
 	~Game();
-	bool m_isDebugMode;
+
 	// game properties
 	bool m_bRunning;
 	Uint32 m_frames;
@@ -76,6 +76,9 @@ private:
 
 	// storage structures
 	std::shared_ptr<SDL_Window> m_pWindow;
+
+	// Debugging variable
+	bool m_isDebugMode;
 };
 
 

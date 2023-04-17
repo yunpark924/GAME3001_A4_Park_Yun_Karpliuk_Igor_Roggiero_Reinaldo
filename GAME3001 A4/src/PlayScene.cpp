@@ -8,9 +8,9 @@
 #include "imgui_sdl.h"
 #include "Renderer.h"
 #include "Util.h"
-#include "Enemy.h"
 #include <fstream>
-#include "../Template/EnemyT.h"
+
+#include "DestructibleObstacle.h"
 
 PlayScene::PlayScene()
 {
@@ -31,7 +31,7 @@ void PlayScene::Draw()
 		{
 			for (int col = 0; col < Config::COL_NUM * 2; ++col)
 			{
-				TextureManager::Instance().Draw("grass", glm::vec2(tile_size * row, tile_size * col) + offset,
+				TextureManager::Instance().Draw("floor", glm::vec2(tile_size * row, tile_size * col) + offset,
 					0, 255, true, SDL_FLIP_NONE);
 			}
 		}
@@ -50,7 +50,7 @@ void PlayScene::Draw()
 			for (const auto enemy : m_pEnemyPool->GetPool())
 			{
 				bool detected;
-				if (enemy->GetEnemyType() == EnemyT::CLOSE_COMBAT)
+				if (enemy->GetEnemyType() == EnemyType::CLOSE_COMBAT)
 				{
 					detected = dynamic_cast<CloseCombatEnemy*>(enemy)->GetTree()->GetPlayerDetectedNode()->GetDetected();
 					Util::DrawCircle(enemy->GetTransform()->position, dynamic_cast<CloseCombatEnemy*>(enemy)->GetMaxRange(), detected ? glm::vec4(0, 1, 0, 1) : glm::vec4(1, 0, 0, 1));
@@ -76,46 +76,68 @@ void PlayScene::Update()
 		{
 			m_gameWon = true;
 		}
-		if (m_pPlayer->GetHealth() <= 0)
+		if(m_pPlayer->GetHealth()<=0)
 		{
 			m_gameLost = true;
 		}
-
+	
+		
 		CheckCollision();
 
+		// Delete any destructible obstacles that have to be destroyed
 		for (size_t i = 0; i < m_pObstacles.size(); i++)
 		{
 			if (m_pObstacles[i]->GetDeleteMe())
 			{
+				float height;
+				float width;
+				glm::vec2 pos;
+				constexpr auto tile_size = Config::TILE_SIZE;
+				constexpr auto offset = glm::vec2(Config::TILE_SIZE * 0.5f, Config::TILE_SIZE * 0.5f);
+				pos = m_pObstacles[i]->GetTransform()->position;
+				height = m_pObstacles[i]->GetHeight();
+				width = m_pObstacles[i]->GetWidth();
+				for (float x = pos.x-width/2; x < pos.x+width/2+tile_size; x+=tile_size)
+				{
+					for (float y = pos.y-height/2; y < pos.y+height/2+tile_size; y+=tile_size)
+					{
+						auto path_node = new PathNode();
+						path_node->GetTransform()->position = glm::vec2(x-offset.x-5,y-offset.y+5);
+						AddChild(path_node);
+						m_pGrid.push_back(path_node);
+					}
+				}
 				RemoveChild(m_pObstacles[i]);
 				m_pObstacles[i] = nullptr;
 				m_pObstacles.erase(i + m_pObstacles.begin());
 				m_pObstacles.shrink_to_fit();
 			}
-
+			
 		}
 		for (const auto enemy : m_pEnemyPool->GetPool())
 		{
+		
 			float distance = Util::Distance(enemy->GetTransform()->position, m_pPlayer->GetTransform()->position);
 
-			if (enemy->GetEnemyType() == EnemyT::CLOSE_COMBAT)
+			if (enemy->GetEnemyType() == EnemyType::CLOSE_COMBAT)
 			{
 				const auto tempEnemy = dynamic_cast<CloseCombatEnemy*>(enemy);
 				tempEnemy->GetTree()->GetEnemyHealthNode()->SetHealthy(tempEnemy->GetHealth() > 25);
-				tempEnemy->GetTree()->GetEnemyHitNode()->SetHit(tempEnemy->GetIsHit());
+				tempEnemy->GetTree()->GetEnemyHitNode()->SetHit(tempEnemy->GetIsHit()); 
 				tempEnemy->CheckAgentLOSToTarget(m_pPlayer, m_pObstacles);
-
+				
 				tempEnemy->GetTree()->GetPlayerDetectedNode()->SetPlayerDetected(distance < tempEnemy->GetMaxRange() || tempEnemy->HasLOS());
-				tempEnemy->GetTree()->GetCloseCombatNode()->SetIsWithinCombatRange(distance <= tempEnemy->GetMaxRange() && distance >= tempEnemy->GetMinRange());
+				tempEnemy->GetTree()->GetCloseCombatNode()->SetIsWithinCombatRange(distance<= tempEnemy->GetMaxRange() && distance >= tempEnemy->GetMinRange());
 			}
-			else { // If ranged combat enemy
+			else { 
 				const auto tempEnemy = dynamic_cast<RangedCombatEnemy*>(enemy);
 				tempEnemy->GetTree()->GetEnemyHealthNode()->SetHealthy(tempEnemy->GetHealth() > 25);
-				tempEnemy->GetTree()->GetEnemyHitNode()->SetHit(tempEnemy->GetIsHit());
+				tempEnemy->GetTree()->GetEnemyHitNode()->SetHit(tempEnemy->GetIsHit()); 
 				tempEnemy->CheckAgentLOSToTarget(m_pPlayer, m_pObstacles);
-
-				tempEnemy->GetTree()->GetPlayerDetectedNode()->SetPlayerDetected(distance < tempEnemy->GetMaxRange() || tempEnemy->HasLOS());
-				tempEnemy->GetTree()->GetRangedCombatNode()->SetIsWithinCombatRange(distance <= tempEnemy->GetMaxRange() && distance >= tempEnemy->GetMinRange());
+				
+				tempEnemy->GetTree()->GetPlayerDetectedNode()->SetPlayerDetected(distance < tempEnemy->GetMaxRange()|| tempEnemy->HasLOS());
+				tempEnemy->GetTree()->GetRangedCombatNode()->SetIsWithinCombatRange(distance<= tempEnemy->GetMaxRange() && distance >= tempEnemy->GetMinRange());
+				
 
 			}
 		}
@@ -140,7 +162,6 @@ void PlayScene::Update()
 		m_RemainingEnemiesLabel->SetColour({ 128,128,128,255 });
 		m_RemainingEnemiesLabel->SetText(std::to_string(m_pEnemyPool->GetPool().size()));
 
-		// Check to see if enemy is off screen, if so then spawn another enemy and destroy said enemy.
 		for (auto enemy : m_pEnemyPool->GetPool())
 		{
 			if (!m_gameWon)
@@ -148,12 +169,12 @@ void PlayScene::Update()
 				if ((enemy->GetTransform()->position.x > 800.0f || enemy->GetTransform()->position.x < 0)
 					&& (enemy->GetTransform()->position.y > 600.0f || enemy->GetTransform()->position.y < 0))
 				{
-					if (enemy->GetEnemyType() == EnemyT::CLOSE_COMBAT)
+					if (enemy->GetEnemyType() == EnemyType::CLOSE_COMBAT)
 					{
-						m_pEnemyPool->SpawnEnemy(new CloseCombatEnemy(this), EnemyT::CLOSE_COMBAT);
+						m_pEnemyPool->SpawnEnemy(new CloseCombatEnemy(this), EnemyType::CLOSE_COMBAT);
 					}
 					else {
-						m_pEnemyPool->SpawnEnemy(new RangedCombatEnemy(this), EnemyT::RANGED);
+						m_pEnemyPool->SpawnEnemy(new RangedCombatEnemy(this), EnemyType::RANGED);
 					}
 					enemy->SetDeleteMe(true);
 				}
@@ -161,21 +182,21 @@ void PlayScene::Update()
 		}
 		if (m_gameWon)
 		{
-			SoundManager::Instance().PlaySoundFX("yippe");
+			SoundManager::Instance().PlaySoundFX("win");
 			Game::Instance().ChangeSceneState(SceneState::WIN);
 		}
-		else if (m_gameLost)
+		else if(m_gameLost)
 		{
 			SoundManager::Instance().PlaySoundFX("lose");
 			Game::Instance().ChangeSceneState(SceneState::LOSE);
 		}
 	}
-
 }
 
 void PlayScene::Clean()
 {
 	RemoveAllChildren();
+	SoundManager::Instance().Unload("dungeon", SoundType::SOUND_MUSIC);
 }
 
 void PlayScene::HandleEvents()
@@ -212,31 +233,29 @@ void PlayScene::HandleEvents()
 			m_pPlayer->SetAnimationState(PlayerAnimationState::PLAYER_RUN_DOWN);
 
 			m_pPlayer->GetRigidBody()->velocity.y -= 12.5f;
-			//SoundManager::Instance().Play_Sound("footsteps");
+			//SoundManager::Instance().PlaySoundFX("walk");
 		}
 		else if (EventManager::Instance().IsKeyDown(SDL_SCANCODE_S))
 		{
 			m_pPlayer->SetAnimationState(PlayerAnimationState::PLAYER_RUN_UP);
 			m_pPlayer->GetRigidBody()->velocity.y += 12.5f;
-			//SoundManager::Instance().Play_Sound("footsteps");
+			//SoundManager::Instance().PlaySoundFX("walk");
 		}
 		if (EventManager::Instance().IsKeyDown(SDL_SCANCODE_A))
 		{
 			m_pPlayer->SetAnimationState(PlayerAnimationState::PLAYER_RUN_LEFT);
 			m_pPlayer->GetRigidBody()->velocity.x -= 12.5f;
-			//SoundManager::Instance().Play_Sound("footsteps");
+			//SoundManager::Instance().PlaySoundFX("walk");
 		}
 		else if (EventManager::Instance().IsKeyDown(SDL_SCANCODE_D))
 		{
 			m_pPlayer->SetAnimationState(PlayerAnimationState::PLAYER_RUN_RIGHT);
 			m_pPlayer->GetRigidBody()->velocity.x += 12.5f;
-			//SoundManager::Instance().Play_Sound("footsteps");
+			//SoundManager::Instance().PlaySoundFX("walk");
 		}
 		if (EventManager::Instance().MousePressed(1))
 		{
 			std::cout << "Mouse 1 Pressed" << std::endl;
-			// If player attack radius is touching the enemy in any way, melee attack!
-			//SoundManager::Instance().Play_Sound("swipe");
 			for (auto enemy : m_pEnemyPool->GetPool()) {
 				if (Util::GetClosestEdge(m_pPlayer->GetTransform()->position, enemy) <= m_pPlayer->GetRangeOfAttack()) {
 					m_pPlayer->MeleeAttack();
@@ -253,53 +272,54 @@ void PlayScene::HandleEvents()
 		if (EventManager::Instance().MousePressed(3))
 		{
 			std::cout << "Mouse 2 Pressed" << std::endl;
+			m_pPlayer->SetAnimationState(PlayerAnimationState::PLAYER_RUN_RIGHT);
 			if (m_pTorpedoPool->GetPool().size() < 2)
 			{
 				Torpedo* temp = new TorpedoFederation(5.0f, Util::Normalize({ EventManager::Instance().GetMousePosition() - m_pPlayer->GetTransform()->position }));
 				temp->SetTorpedoType(PLAYER);
 				m_pTorpedoPool->FireTorpedo(temp);
 				m_pTorpedoPool->GetPool().back()->GetTransform()->position = m_pPlayer->GetTransform()->position; // Set the spawn point
-				SoundManager::Instance().SetSoundVolume(50);
-				SoundManager::Instance().PlaySoundFX("carrot");
+				SoundManager::Instance().SetSoundVolume(35);
+				SoundManager::Instance().PlaySoundFX("arrow");
 			}
 			else {
-				std::cout << "Cannot shoot yet." << std::endl;
+				std::cout << "Cant shoot." << std::endl;
 			}
 
 		}
-
+		
 		if (Game::Instance().GetDebugMode())
 		{
 			if (EventManager::Instance().KeyPressed(SDL_SCANCODE_K))
 			{
 				for (const auto enemy : m_pEnemyPool->GetPool())
 				{
-					enemy->TakeDamage(10); // enemy takes fixed dmg.
-					if (enemy->GetEnemyType() == EnemyT::CLOSE_COMBAT)
+					enemy->TakeDamage(10);
+					if (enemy->GetEnemyType() == EnemyType::CLOSE_COMBAT)
 					{
 						dynamic_cast<CloseCombatEnemy*>(enemy)->GetTree()->GetEnemyHitNode()->SetHit(true);
 					}
 					else {
 						dynamic_cast<RangedCombatEnemy*>(enemy)->GetTree()->GetEnemyHitNode()->SetHit(true);
 					}
-					std::cout << "Starship at" << enemy->GetHealth() << "%. " << std::endl;
+					std::cout << "enemy" << enemy->GetHealth() << "%. " << std::endl;
 				}
 
 			}
 
 			if (EventManager::Instance().KeyPressed(SDL_SCANCODE_R))
 			{
-				m_pEnemyPool->SpawnEnemy(new CloseCombatEnemy(this), EnemyT::CLOSE_COMBAT);
-				m_pEnemyPool->SpawnEnemy(new RangedCombatEnemy(this), EnemyT::RANGED);
+				m_pEnemyPool->SpawnEnemy(new CloseCombatEnemy(this), EnemyType::CLOSE_COMBAT);
+				m_pEnemyPool->SpawnEnemy(new RangedCombatEnemy(this), EnemyType::RANGED);
 			}
 
 			if (EventManager::Instance().KeyPressed(SDL_SCANCODE_P))
 			{
 				for (const auto enemy : m_pEnemyPool->GetPool())
 				{
-					enemy->SetHealth(100); // Enemy Sets health
+					enemy->SetHealth(100);
 
-					if (enemy->GetEnemyType() == EnemyT::CLOSE_COMBAT)
+					if (enemy->GetEnemyType() == EnemyType::CLOSE_COMBAT)
 					{
 						dynamic_cast<CloseCombatEnemy*>(enemy)->SetIsHit(true);
 						dynamic_cast<CloseCombatEnemy*>(enemy)->GetTree()->GetPlayerDetectedNode()->SetPlayerDetected(false);
@@ -319,32 +339,10 @@ void PlayScene::HandleEvents()
 void PlayScene::Start()
 {
 	// Set GUI Title
-	m_guiTitle = "ASSIGNMENT 4";
+	m_guiTitle = "Assignment 4";
+	TextureManager::Instance().Load("../Assets/sprites/floor.png", "floor");
 
-	// Setup a few more fields
-	m_LOSMode = LOSMode::TARGET;
-	m_pathNodeLOSDistance = 1000; // 1000px distance
-	m_setPathNodeLOSDistance(m_pathNodeLOSDistance);
-
-	// Add Game Objects
-	m_pBackground = new Background();
-	AddChild(m_pBackground, 0);
-
-	m_pTarget = new Target();
-	m_pTarget->GetTransform()->position = glm::vec2(550.0f, 300.0f);
-	AddChild(m_pTarget, 2);
-
-#if defined(CLOSE_COMBAT)
-	m_pStarShip = new CloseCombatEnemy(this);
-#else
-	m_pStarShip = new RangedCombatEnemy(this);
-#endif
-	m_pStarShip->GetTransform()->position = glm::vec2(150.0f, 300.0f);
-	AddChild(m_pStarShip, 2);
-
-	m_pTorpedoPool = new TorpedoPool();
-	AddChild(m_pTorpedoPool, 2);
-
+	Game::Instance().SetDebugMode(true);
 	// Add Obstacles
 	BuildObstaclePool();
 
@@ -353,45 +351,85 @@ void PlayScene::Start()
 	m_buildGrid();
 	m_toggleGrid(m_isGridEnabled);
 
+	// Setup a few more fields
+	m_LOSMode = LOSMode::TARGET;
+	m_pathNodeLOSDistance = 1000;
+	m_setPathNodeLOSDistance(m_pathNodeLOSDistance);
+
+	m_pPlayer = new Player();
+	m_pPlayer->GetTransform()->position = glm::vec2(550.0f, 300.0f);
+	AddChild(m_pPlayer, 2);
+
+	// Initializing the enemy pool + spawning in stuff!.
+	m_pEnemyPool = new EnemyPool();
+	AddChild(m_pEnemyPool, 2);
+	m_pEnemyPool->SpawnEnemy(new CloseCombatEnemy(this), EnemyType::CLOSE_COMBAT);
+	m_pEnemyPool->SpawnEnemy(new RangedCombatEnemy(this), EnemyType::RANGED);
+
+	// Set the random enemy position!
+	for (const auto enemy : m_pEnemyPool->GetPool())
+	{
+		enemy->GetTransform()->position = glm::vec2(rand() % 200 + 150, rand() % 300 + 200);
+	}
+	// Adding remaining Enemies label
+	m_RemainingEnemiesLabel = new Label();
+	m_RemainingEnemiesLabel->GetTransform()->position = glm::vec2(50.0f, 50.0f);
+	m_RemainingEnemiesLabel->SetColour({ 255,0,0,255 });
+	AddChild(m_RemainingEnemiesLabel);
+
+
+	m_pTorpedoPool = new TorpedoPool();
+	AddChild(m_pTorpedoPool, 2);
+
+	
+
 
 	// Preload Sounds
-
-	SoundManager::Instance().Load("../Assets/Audio/yay.ogg", "yay", SoundType::SOUND_SFX);
-	SoundManager::Instance().Load("../Assets/Audio/thunder.ogg", "thunder", SoundType::SOUND_SFX);
-	SoundManager::Instance().Load("../Assets/Audio/torpedo.ogg", "torpedo", SoundType::SOUND_SFX);
-	SoundManager::Instance().Load("../Assets/Audio/torpedo_k.ogg", "torpedo_k", SoundType::SOUND_SFX);
-
+	SoundManager::Instance().Load("../Assets/Audio/arrow.mp3", "arrow", SoundType::SOUND_SFX);
+	SoundManager::Instance().Load("../Assets/Audio/beam.mp3", "beam", SoundType::SOUND_SFX);
+	SoundManager::Instance().Load("../Assets/Audio/hurt.mp3", "hurt", SoundType::SOUND_SFX);
+	SoundManager::Instance().Load("../Assets/Audio/break.mp3", "break", SoundType::SOUND_SFX);
+	SoundManager::Instance().Load("../Assets/Audio/win.mp3", "win", SoundType::SOUND_SFX);
+	SoundManager::Instance().Load("../Assets/Audio/lose.mp3", "lose", SoundType::SOUND_SFX);
+	SoundManager::Instance().Load("../Assets/Audio/walk.mp3", "walk", SoundType::SOUND_SFX);
 
 	// Preload music
-	SoundManager::Instance().Load("../Assets/Audio/Klingon.mp3", "klingon", SoundType::SOUND_MUSIC);
-	SoundManager::Instance().SetMusicVolume(16);
+	SoundManager::Instance().Load("../Assets/Audio/dungeon.mp3", "dungeon", SoundType::SOUND_MUSIC);
+	SoundManager::Instance().SetMusicVolume(13);
 
 	// Play Music
-	SoundManager::Instance().PlayMusic("klingon");
+	SoundManager::Instance().PlayMusic("dungeon");
+
+	
+
 
 	ImGuiWindowFrame::Instance().SetGuiFunction(std::bind(&PlayScene::GUI_Function, this));
 }
 
-void PlayScene::SpawnEnemyTorpedo()
+void PlayScene::SpawnEnemyTorpedo(Agent* enemyShooting)
 {
-	// Set Spawn Point (ront of our d7
-	glm::vec2 spawn_point = m_pStarShip->GetTransform()->position + m_pStarShip->GetCurrentDirection() * 30.0f;
+	if (!m_gameWon)
+	{
+		glm::vec2 spawn_point = enemyShooting->GetTransform()->position + enemyShooting->GetCurrentDirection() * 30.0f;
 
-	// Set the direction of the Torpedo (normalized)
-	glm::vec2 torpedo_direction = Util::Normalize(m_pTarget->GetTransform()->position - spawn_point);
+		// Set the direction of the Torpedo (normalized)
+		glm::vec2 torpedo_direction = Util::Normalize(m_pPlayer->GetTransform()->position - spawn_point);
 
-	// Spawn the torpedo
-	m_pTorpedoPool->FireTorpedo(new TorpedoKlingon(5.0f, torpedo_direction));
-	m_pTorpedoPool->GetPool().back()->GetTransform()->position = spawn_point; // Set the initial position of the torpedo to the spawn point
-	SoundManager::Instance().PlaySoundFX("torpedo_k");
+		// Spawn the torpedo
+		Torpedo* temp = new TorpedoKlingon(7.5f, torpedo_direction);
+		temp->SetTorpedoType(ENEMY);
+		m_pTorpedoPool->FireTorpedo(temp);
+		m_pTorpedoPool->GetPool().back()->GetTransform()->position = spawn_point; // Set the initial position of the torpedo to the spawn point
+		SoundManager::Instance().PlaySoundFX("beam");
+	}
 }
 
-Target* PlayScene::GetTarget() const
+Player* PlayScene::GetTarget() const
 {
-	return m_pTarget;
+	return m_pPlayer;
 }
 
-std::vector<PathNode*> PlayScene::GetGrid()
+std::vector<PathNode*> PlayScene::GetGrid() const
 {
 	return m_pGrid;
 }
@@ -406,10 +444,8 @@ void PlayScene::GUI_Function()
 	// Always open with a NewFrame
 	ImGui::NewFrame();
 
-	// See examples by uncommenting the following - also look at imgui_demo.cpp in the IMGUI filter
-	//ImGui::ShowDemoWindow();
 	
-	ImGui::Begin("GAME3001 - W2023 - Lab 7.1", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_MenuBar );
+	ImGui::Begin("GAME3001 - W2023 - Assignment 3", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_MenuBar );
 
 	ImGui::Separator();
 
@@ -438,31 +474,13 @@ void PlayScene::GUI_Function()
 
 	ImGui::Separator();
 
-	// StarShip Properties
-	static int shipPosition[] = { static_cast<int>(m_pStarShip->GetTransform()->position.x),
-		static_cast<int>(m_pStarShip->GetTransform()->position.y) };
-	if(ImGui::SliderInt2("Ship Position", shipPosition, 0, 800))
-	{
-		m_pStarShip->GetTransform()->position.x = static_cast<float>(shipPosition[0]);
-		m_pStarShip->GetTransform()->position.y = static_cast<float>(shipPosition[1]);
-	}
-
-	// allow the ship to rotate
-	static int angle;
-	if(ImGui::SliderInt("Ship Direction", &angle, -360, 360))
-	{
-		m_pStarShip->SetCurrentHeading(static_cast<float>(angle));
-	}
-
-	ImGui::Separator();
-
 	// Target Properties
-	static int targetPosition[] = { static_cast<int>(m_pTarget->GetTransform()->position.x),
-		static_cast<int>(m_pTarget->GetTransform()->position.y) };
+	static int targetPosition[] = { static_cast<int>(m_pPlayer->GetTransform()->position.x),
+		static_cast<int>(m_pPlayer->GetTransform()->position.y) };
 	if (ImGui::SliderInt2("Target Position", targetPosition, 0, 800))
 	{
-		m_pTarget->GetTransform()->position.x = static_cast<float>(targetPosition[0]);
-		m_pTarget->GetTransform()->position.y = static_cast<float>(targetPosition[1]);
+		m_pPlayer->GetTransform()->position.x = static_cast<float>(targetPosition[0]);
+		m_pPlayer->GetTransform()->position.y = static_cast<float>(targetPosition[1]);
 	}
 
 	ImGui::Separator();
@@ -485,6 +503,85 @@ void PlayScene::GUI_Function()
 	ImGui::End();
 }
 
+void PlayScene::CheckCollision()
+{
+	for (const auto projectile : m_pTorpedoPool->GetPool())
+	{
+		bool canTorpedoHitEnemy;
+		bool canTorpedoHitPlayer;
+
+		switch (projectile->GetTorpedoType())
+		{
+		case PLAYER:
+			for (const auto enemy : m_pEnemyPool->GetPool())
+			{
+				if (projectile->GetRigidBody()->isColliding)
+				{
+					canTorpedoHitEnemy = false;
+				}
+				else { canTorpedoHitEnemy = true; }
+
+				if (CollisionManager::AABBCheck(enemy, projectile))
+				{
+					if (canTorpedoHitEnemy)
+					{
+						enemy->SetIsHit(true);
+						projectile->SetDeleteMe(true);
+						enemy->TakeDamage(projectile->GetDamage());
+					}
+				}
+				else
+				{
+					enemy->SetIsHit(false);
+				}
+			}
+				break;
+		case ENEMY:
+			if (projectile->GetRigidBody()->isColliding)
+			{
+				canTorpedoHitPlayer = false;
+			}
+			else { canTorpedoHitPlayer = true; }
+
+			if (CollisionManager::AABBCheck(m_pPlayer, projectile))
+			{
+				if (canTorpedoHitPlayer)
+				{
+					projectile->SetDeleteMe(true);
+					m_pPlayer->TakeDamage(projectile->GetDamage());
+					SoundManager::Instance().PlaySoundFX("hurt");
+				}
+			}
+			break;
+		}
+	}
+	
+	m_pPlayer->GetRigidBody()->isColliding=false;
+	for (auto obstacle : m_pObstacles)
+	{
+		if(CollisionManager::AABBCheck(m_pPlayer,obstacle))
+		{
+			m_pPlayer->GetRigidBody()->isColliding = true;
+		}
+		for (auto proj : m_pTorpedoPool->GetPool())
+		{
+			if(CollisionManager::AABBCheck(proj,obstacle))
+			{
+				proj->GetRigidBody()->isColliding=true;
+				proj->SetDeleteMe(true);
+				if(obstacle->GetType()==GameObjectType::DESTRUCT_OBSTACLE)
+				{
+					dynamic_cast<DestructibleObstacle*>(obstacle)->TakeDamage(proj->GetDamage());
+					if (dynamic_cast<DestructibleObstacle*>(obstacle)->GetHealth() <= 0)
+					{
+						SoundManager::Instance().PlaySoundFX("break");
+					}
+				}
+			}
+		}
+	}
+}
+
 void PlayScene::BuildObstaclePool()
 {
 	std::ifstream inFile("../Assets/data/obstacles.txt");
@@ -492,9 +589,10 @@ void PlayScene::BuildObstaclePool()
 	while(!inFile.eof())
 	{
 		std::cout << "Obstacle " << std::endl;
-		auto obstacle = new Obstacle();
-		float x, y, w, h; // declare variables the same as how the file is organized
-		inFile >> x >> y >> w >> h; // read data from file line by line
+		float x, y, w, h;
+		int b; // declare variables the same as how the file is organized
+		inFile >> x >> y >> w >> h >> b; // read data from file line by line
+		auto obstacle = (b == 1) ? new DestructibleObstacle(): new Obstacle();
 		obstacle->GetTransform()->position = glm::vec2(x, y);
 		obstacle->SetWidth(static_cast<int>(w));
 		obstacle->SetHeight(static_cast<int>(h));
@@ -574,35 +672,28 @@ void PlayScene::m_clearNodes()
 
 bool PlayScene::m_checkAgentLOS(Agent* agent, DisplayObject* target_object) const
 {
-	bool has_LOS = false; // default - No LOS
-	agent->SetHasLOS(has_LOS);
-
-	// if ship to target distance is less than or equal to the LOS Distance (Range)
-	const auto agent_to_range = Util::GetClosestEdge(agent->GetTransform()->position, target_object);
-	if (agent_to_range <= agent->GetLOSDistance())
+	bool hasLOS = false;
+	agent->SetHasLOS(hasLOS);
+	// If ship to target distance is <= LOS distance
+	auto AgentToTargetDist = Util::GetClosestEdge(agent->GetTransform()->position, target_object);
+	if (AgentToTargetDist <= agent->GetLOSDistance())
 	{
-		// we are in within LOS Distance 
-		std::vector<DisplayObject*> contact_list;
-		for (auto display_object : GetDisplayList())
+		std::vector<DisplayObject*> contactList;
+		for (auto object : GetDisplayList())
 		{
-			if((display_object->GetType() != GameObjectType::AGENT)
-				&& (display_object->GetType() != GameObjectType::PATH_NODE)
-				&& (display_object->GetType() != GameObjectType::TARGET))
+			
+			if (object->GetType() == GameObjectType::OBSTACLE || object->GetType()== GameObjectType::DESTRUCT_OBSTACLE)
 			{
-				const auto agent_to_object_distance = Util::GetClosestEdge(agent->GetTransform()->position, display_object);
-
-				if (agent_to_object_distance > agent_to_range) { contact_list.push_back(display_object); } // target is out of range
-
+				auto AgentToObjectDist = Util::GetClosestEdge(agent->GetTransform()->position, object);
+				if (AgentToObjectDist > AgentToTargetDist) continue;
+				contactList.push_back(object);
 			}
 		}
-
-		const glm::vec2 agent_LOS_endPoint = agent->GetTransform()->position + agent->GetCurrentDirection() * agent->GetLOSDistance();
-		has_LOS = CollisionManager::LOSCheck(agent, agent_LOS_endPoint, contact_list, target_object);
-
-		const auto LOSColour = (target_object->GetType() == GameObjectType::AGENT) ? glm::vec4(0, 0, 1, 1) : glm::vec4(0, 1, 0, 1);
-		agent->SetHasLOS(has_LOS, LOSColour);
+		const glm::vec2 agentEndPoint = agent->GetTransform()->position + agent->GetCurrentDirection() * agent->GetLOSDistance();
+		hasLOS = CollisionManager::LOSCheck(agent, agentEndPoint, contactList, target_object);
+		agent->SetHasLOS(hasLOS);
 	}
-	return has_LOS;
+	return hasLOS;
 }
 
 bool PlayScene::m_checkPathNodeLOS(PathNode* path_node, DisplayObject* target_object) const
@@ -626,9 +717,13 @@ void PlayScene::m_checkAllNodesWithBoth() const
 {
 	for (const auto path_node : m_pGrid)
 	{
-		const bool LOSWithStarShip = m_checkPathNodeLOS(path_node, m_pStarShip);
-		const bool LOSWithTarget = m_checkPathNodeLOS(path_node, m_pTarget);
-		path_node->SetHasLOS(LOSWithStarShip && LOSWithTarget, glm::vec4(0, 1, 1, 1));
+		for (const auto enemy : m_pEnemyPool->GetPool())
+		{
+			const bool LOSWithStarShip = m_checkPathNodeLOS(path_node, enemy);
+			const bool LOSWithTarget = m_checkPathNodeLOS(path_node, m_pPlayer);
+			path_node->SetHasLOS(LOSWithStarShip && LOSWithTarget, glm::vec4(0, 1, 1, 1));
+		}
+		
 	}
 }
 

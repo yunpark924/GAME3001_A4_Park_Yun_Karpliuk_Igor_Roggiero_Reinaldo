@@ -230,12 +230,14 @@ bool Agent::CheckAgentLOSToTarget(DisplayObject* target_object, const std::vecto
 	SetHasLOS(has_LOS);
 
 	const auto target_direction = target_object->GetTransform()->position - GetTransform()->position;
-	const auto normalized_direction = Util::Normalize(target_direction);
+	const auto normalized_direction = Util::Normalize(target_direction); // Points to the target (Unit Vector)
 	SetMiddleLOSEndPoint(GetTransform()->position + normalized_direction * GetLOSDistance());
 
+	// if ship to target distance is less than or equal to the LOS Distance (Range)
 	const auto agent_to_range = Util::GetClosestEdge(GetTransform()->position, target_object);
 	if (agent_to_range <= GetLOSDistance())
 	{
+		// we are in within LOS Distance 
 		std::vector<DisplayObject*> contact_list;
 		for (const auto obstacle : obstacles)
 		{
@@ -245,13 +247,15 @@ bool Agent::CheckAgentLOSToTarget(DisplayObject* target_object, const std::vecto
 				&& (obstacle->GetType() != GameObjectType::PATH_NODE)
 				&& (obstacle->GetType() != GameObjectType::TARGET))
 			{
-				contact_list.push_back(obstacle); 
+				 contact_list.push_back(obstacle); // target is out of range
 
 			}
 		}
 
 		has_LOS = CollisionManager::LOSCheck(this, GetMiddleLOSEndPoint(), contact_list, target_object);
 
+		/*const auto LOSColour = (target_object->GetType() == GameObjectType::AGENT) ? glm::vec4(0, 0, 1, 1) : glm::vec4(0, 1, 0, 1);
+		agent->SetHasLOS(has_LOS, LOSColour);*/
 	}
 
 	SetHasLOS(has_LOS);
