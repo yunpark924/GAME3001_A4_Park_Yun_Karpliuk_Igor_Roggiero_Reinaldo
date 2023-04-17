@@ -111,6 +111,7 @@ void PlayScene::Update()
 				m_pObstacles[i] = nullptr;
 				m_pObstacles.erase(i + m_pObstacles.begin());
 				m_pObstacles.shrink_to_fit();
+				m_toggleGrid(m_isGridEnabled);
 			}
 			
 		}
@@ -453,6 +454,13 @@ void PlayScene::GUI_Function()
 	if(ImGui::Checkbox("Toggle Grid", &m_isGridEnabled))
 	{
 		m_toggleGrid(m_isGridEnabled);
+	}
+
+	ImGui::Separator();
+
+	if(ImGui::Checkbox("Toggle Debug View", &m_bDebugView))
+	{
+		
 	}
 
 	ImGui::Separator();
