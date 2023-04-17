@@ -50,11 +50,6 @@ void EndScene::HandleEvents()
 
 void EndScene::Start()
 {
-	const SDL_Color blue = { 0, 0, 255, 255 };
-	m_label = (m_wincondition) ? new  Label("Hyrule is saved!", "Dock51", 80, blue, glm::vec2(400.0f, 40.0f)) : new  Label("Hyrule has Fallen.", "Consolas", 80, blue, glm::vec2(400.0f, 40.0f));
-	m_label->SetParent(this);
-	AddChild(m_label);
-
 	if (!m_wincondition)
 	{
 		// Preload music
@@ -67,6 +62,8 @@ void EndScene::Start()
 
 	else
 	{
+		TextureManager::Instance().Load("../Assets/sprites/gameover.png", "game over");
+
 		// Preload music
 		SoundManager::Instance().Load("../Assets/Audio/Victory.mp3", "Victory", SoundType::SOUND_MUSIC);
 		SoundManager::Instance().SetMusicVolume(20);
@@ -74,7 +71,12 @@ void EndScene::Start()
 		// Play Music
 		SoundManager::Instance().PlayMusic("Victory");
 	}
-	
+
+	const SDL_Color blue = { 0, 0, 255, 255 };
+	m_label = (m_wincondition) ? new  Label("Hyrule is saved!", "Dock51", 80, blue, glm::vec2(400.0f, 40.0f)) : new  Label("Hyrule has Fallen.", "Consolas", 80, blue, glm::vec2(400.0f, 40.0f));
+	m_label->SetParent(this);
+	AddChild(m_label);
+
 	// Restart Button
 	m_pRestartButton = new Button("../Assets/textures/restartButton.png", "restartButton", GameObjectType::RESTART_BUTTON);
 	m_pRestartButton->GetTransform()->position = glm::vec2(400.0f, 400.0f);
